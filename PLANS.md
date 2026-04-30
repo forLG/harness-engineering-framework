@@ -52,15 +52,19 @@ Acceptance criteria:
 
 ### Milestone 4: Evaluation Loop
 
-Status: placeholder.
+Status: active.
 
 Goal: add repeatable evals with cost, latency, and quality reporting.
 
 Acceptance criteria:
 
-- Benchmark tasks are versioned.
+- Benchmark tasks are versioned under `evals/benchmarks/`.
+- `tools/run_evals.py --suite smoke` runs deterministic local smoke benchmarks.
+- Suite baselines are versioned under `evals/baselines/`.
 - Eval results are stored in `evals/results/`.
-- Regressions are visible before merge.
+- Regressions against the current baseline are visible before merge through a nonzero eval runner exit code.
+- Cost fields are recorded as `null` until execute-mode benchmarks can measure model usage.
+- Product-specific evals have a template under `evals/benchmarks/product-template/` but are not runnable until a target project fills them.
 
 ### Milestone 5: Entropy Control
 
@@ -80,4 +84,6 @@ Acceptance criteria:
 
 ## Completed Plans
 
-- None yet.
+- `docs/exec-plans/completed/evaluation-loop.md`
+- `docs/exec-plans/completed/baseline-regression.md`
+- `docs/exec-plans/completed/product-eval-template.md`

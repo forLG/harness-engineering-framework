@@ -1,0 +1,21 @@
+{
+  "id": "TODO-product-task-id",
+  "title": "TODO: Product benchmark task title",
+  "status": "queued",
+  "parent": null,
+  "priority": 100,
+  "created_at": "TODO: ISO-8601 timestamp",
+  "updated_at": "TODO: ISO-8601 timestamp",
+  "prompt": "TODO: Describe one narrow product-specific task grounded in the target repository.",
+  "acceptance": [
+    "TODO: Observable product behavior or artifact changed as expected.",
+    "TODO: Relevant project validation command passes."
+  ],
+  "validation_commands": [
+    "TODO: replace with safe project validation command"
+  ],
+  "commit_policy": "never",
+  "run_ids": [],
+  "artifacts": [],
+  "notes": "Template only. Copy into a concrete benchmark directory before running."
+}

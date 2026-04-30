@@ -12,12 +12,14 @@ This harness uses Codex as the worker agent and a repository-local supervisor sc
 - Harness task loop execution: `python tools/harness_loop.py --once --execute`.
 - Harness task loop with successful-run commits: `python tools/harness_loop.py --once --execute --auto-commit`.
 - Batch execution: `python tools/harness_loop.py --until-empty --execute --max-tasks 5`.
+- Harness smoke evals: `python tools/run_evals.py --suite smoke`.
 
 The supervisor defaults to preview mode. It writes the prompts it would send to Codex without moving task state or invoking the agent.
 
 ## Runner Entrypoints
 
 - `tools/harness_loop.py`: Ralph-style outer loop supervisor.
+- `tools/run_evals.py`: eval runner for benchmark definitions under `evals/benchmarks/`.
 - `tools/validate_harness_structure.py`: structural and guardrail validator for required harness files, directories, and task state.
 - `tools/validate_guardrails.py`: task schema, naming, and status-directory validator used by the structural validator.
 - `runtime/tasks/TASK_SCHEMA.md`: task file contract.
@@ -75,6 +77,12 @@ The loop must stop or mark a task `blocked` when a role requests human escalatio
 - Traces: `artifacts/traces/`
 - Screenshots: `artifacts/screenshots/`
 - Eval results: `evals/results/`
+
+## Eval Loop
+
+The eval runner stages benchmark tasks into `runtime/tasks/queue/`, gives them a high-priority value so they are selected ahead of normal work, runs the harness loop or deterministic commands, checks required artifacts, records latency and status, then removes the staged eval task.
+
+Smoke evals run in preview mode and do not invoke Codex. By default, suite results are compared against `evals/baselines/<suite>.json`; use `--update-baseline` only after a known-good pass. Product-specific suites may add execute-mode benchmarks later, but those should define cost, latency, sandbox, and approval expectations before being used in CI.
 
 ## Stop Conditions
 

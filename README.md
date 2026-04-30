@@ -11,6 +11,7 @@ The goal is not to store one large prompt. The goal is to create repository-nati
 - Focused docs for environment, runtime, observability, guardrails, evaluation, operations, reliability, security, and quality.
 - Placeholder directories for execution plans, raw references, distilled reference notes, generated docs, evals, runtime code, tools, and run artifacts.
 - A structural and guardrail validator in `tools/validate_harness_structure.py`, with task-specific checks in `tools/validate_guardrails.py`.
+- A smoke evaluation runner in `tools/run_evals.py`, with starter benchmark definitions under `evals/benchmarks/`.
 
 ## Apply It To A Real Project
 
@@ -164,6 +165,30 @@ Good next steps after filling placeholders:
 - Add benchmark tasks under `evals/benchmarks/`.
 - Capture eval results under `evals/results/`.
 - Add cleanup checks for stale docs, dead plans, and drift from architecture.
+
+## Evaluation Loop
+
+Run deterministic smoke evals before merging harness changes:
+
+```bash
+python tools/run_evals.py --suite smoke
+```
+
+The smoke suite stages benchmark tasks into `runtime/tasks/queue/`, runs the harness in preview mode, checks required artifacts, runs local validators, and writes a result file under `evals/results/`. The runner exits nonzero on failed benchmarks so regressions are visible in local checks or CI.
+
+Smoke runs compare against `evals/baselines/smoke.json` by default. Refresh that baseline after an intentional known-good behavior change:
+
+```bash
+python tools/run_evals.py --suite smoke --update-baseline
+```
+
+List benchmark definitions:
+
+```bash
+python tools/run_evals.py --list
+```
+
+For product-specific phase-three evals, start from `evals/benchmarks/product-template/`. Copy the template into a concrete benchmark directory, fill the target project's facts, run it with `--no-baseline` while calibrating, then create a baseline with `--update-baseline` after a known-good pass.
 
 ## Validation
 
