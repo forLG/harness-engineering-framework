@@ -19,14 +19,19 @@ Acceptance criteria:
 
 ### Milestone 2: Runtime Prototype
 
-Status: placeholder.
+Status: active.
 
-Goal: define and implement the minimal task loop.
+Goal: implement the minimal Ralph-style outer task loop.
 
 Acceptance criteria:
 
-- Task state is externalized.
-- Tool permissions are explicit.
+- Task state is externalized under `runtime/tasks/`.
+- Role prompts exist for implementer, validator, reviewer, and follow-up planner agents.
+- `tools/harness_loop.py --once` previews the assembled prompts.
+- `tools/harness_loop.py --once --execute` can run one queued task through Codex.
+- Run outputs are saved under `artifacts/runs/`.
+- Follow-up tasks can be generated into `runtime/tasks/queue/`.
+- Successful runs can optionally create local Git commits after validation and review.
 - Logs and artifacts are inspectable.
 - One benchmark task runs end to end.
 

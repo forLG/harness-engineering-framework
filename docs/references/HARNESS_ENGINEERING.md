@@ -2,6 +2,8 @@
 
 Use this file for project-local notes about harness engineering principles, constraints, and decisions.
 
+Source material or source pointers belong in `references/`. This file is the distilled, harness-local interpretation.
+
 ## Core Principles
 
 - Humans steer; agents execute.

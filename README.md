@@ -9,7 +9,7 @@ The goal is not to store one large prompt. The goal is to create repository-nati
 - A short agent entry point in `AGENTS.md`.
 - Architecture and planning documents at the repository root.
 - Focused docs for environment, runtime, observability, guardrails, evaluation, operations, reliability, security, and quality.
-- Placeholder directories for execution plans, references, generated docs, evals, runtime code, tools, and run artifacts.
+- Placeholder directories for execution plans, raw references, distilled reference notes, generated docs, evals, runtime code, tools, and run artifacts.
 - A structural validator in `tools/validate_harness_structure.py`.
 
 ## Apply It To A Real Project
@@ -121,6 +121,36 @@ Store run outputs in:
 - `artifacts/traces/`
 - `artifacts/screenshots/`
 - `evals/results/`
+
+## References
+
+Use `references/` for external or raw long-lived source material that agents should consult, such as copied source excerpts, vendor documentation snapshots, API specs, or source pointers.
+
+Use `docs/references/` for project-local interpretation of those sources: distilled principles, decisions, and notes about how the material applies to this harness.
+
+## Ralph-Style Task Loop
+
+This scaffold includes a minimal outer loop supervisor:
+
+```bash
+python tools/harness_loop.py --once
+```
+
+Preview mode writes the implementer, validator, and reviewer prompts into `artifacts/runs/` without invoking Codex. To execute one queued task:
+
+```bash
+python tools/harness_loop.py --once --execute
+```
+
+Queued tasks live in `runtime/tasks/queue/` as JSON files. The supervisor moves tasks through `active`, `completed`, and `blocked`, saves role outputs in `artifacts/runs/`, and can create follow-up queued tasks when validation or review finds unfinished work.
+
+To let the loop create a local commit after a successful validated run:
+
+```bash
+python tools/harness_loop.py --once --execute --auto-commit
+```
+
+Auto-commit requires a clean Git worktree before the task starts, commits only after validator and reviewer approval, and never pushes.
 
 ## From Documentation To Harness
 
