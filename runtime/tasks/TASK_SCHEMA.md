@@ -4,6 +4,8 @@ Harness tasks are JSON files stored in `runtime/tasks/queue/`, `runtime/tasks/ac
 
 Use JSON instead of YAML so the supervisor can parse tasks with the Python standard library.
 
+Task filenames must match their `id`, for example `short-stable-id.json`. Task ids must use lowercase letters, numbers, and hyphens, with no leading or trailing hyphen.
+
 ## Required Fields
 
 ```json
@@ -47,6 +49,8 @@ Commit message templates may use `{task_id}`, `{title}`, and `{run_id}`.
 - `active`: currently being worked by a run.
 - `completed`: accepted or converted into follow-up tasks.
 - `blocked`: requires human input or external action.
+
+Task status must match its state directory. The only scaffold exception is `runtime/tasks/queue/example-task.json`, which may use `status: "example"` so it documents the schema without being picked up by the runner.
 
 ## Ralph Loop Semantics
 

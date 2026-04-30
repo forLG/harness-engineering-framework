@@ -1,6 +1,8 @@
 from pathlib import Path
 import sys
 
+from validate_guardrails import collect_failures as collect_guardrail_failures
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -68,6 +70,8 @@ def main() -> int:
         failures.append(
             f"AGENTS.md is {agents.stat().st_size} bytes; keep it under {MAX_AGENTS_BYTES} bytes"
         )
+
+    failures.extend(collect_guardrail_failures())
 
     if failures:
         print("Harness structure validation failed:")

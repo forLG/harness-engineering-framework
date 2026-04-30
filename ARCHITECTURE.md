@@ -54,9 +54,37 @@ Define how the harness separates:
 
 ## Dependency Boundaries
 
-Status: placeholder.
+Status: project-specific placeholder.
 
-Encode final boundaries as mechanical checks. Until then, record intended dependency direction here.
+Fill this section when applying the framework to a real repository. Do not invent product boundaries in the generic scaffold.
+
+Record intended dependency direction before encoding it mechanically.
+
+Boundary placeholders:
+
+- `TODO: identify source layers or packages, such as ui, api, domain, infrastructure, generated, or tests.`
+- `TODO: list allowed imports between layers or packages.`
+- `TODO: list forbidden imports between layers or packages.`
+- `TODO: identify generated files and whether agents may edit them directly.`
+- `TODO: identify migration, schema, or contract files that require special validation.`
+
+Mechanical check placeholder:
+
+- `TODO: encode dependency boundaries in tools/check_dependency_boundaries.py, an existing linter config, or CI.`
+
+## Product-Specific Architecture Rules
+
+Status: project-specific placeholder.
+
+Use this section only after the framework is applied to a real product repository.
+
+Rules to discover and fill:
+
+- `TODO: source-of-truth files for product behavior, contracts, schemas, and generated artifacts.`
+- `TODO: ownership boundaries for product modules or services.`
+- `TODO: runtime services, ports, databases, queues, and external systems.`
+- `TODO: build, test, lint, typecheck, migration, and UI verification commands required by changed paths.`
+- `TODO: deployment, production mutation, credential, and approval boundaries.`
 
 ## Open Decisions
 

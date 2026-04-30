@@ -18,7 +18,8 @@ The supervisor defaults to preview mode. It writes the prompts it would send to 
 ## Runner Entrypoints
 
 - `tools/harness_loop.py`: Ralph-style outer loop supervisor.
-- `tools/validate_harness_structure.py`: structural validator for required harness files and directories.
+- `tools/validate_harness_structure.py`: structural and guardrail validator for required harness files, directories, and task state.
+- `tools/validate_guardrails.py`: task schema, naming, and status-directory validator used by the structural validator.
 - `runtime/tasks/TASK_SCHEMA.md`: task file contract.
 - `docs/agent-roles/*.md`: role-specific responsibilities and machine-readable output contracts.
 

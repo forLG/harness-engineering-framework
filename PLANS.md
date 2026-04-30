@@ -37,16 +37,18 @@ Acceptance criteria:
 
 ### Milestone 3: Mechanical Guardrails
 
-Status: placeholder.
+Status: active.
 
 Goal: convert architecture and quality rules into checks.
 
 Acceptance criteria:
 
+- Task schema and task state-directory alignment are checked.
+- Task id naming and filename/id matching are checked.
+- Guardrail failures include remediation guidance.
 - Dependency boundaries are checked.
 - Documentation freshness is checked.
 - File and naming invariants are checked.
-- Guardrail failures include remediation guidance.
 
 ### Milestone 4: Evaluation Loop
 

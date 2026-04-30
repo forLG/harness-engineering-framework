@@ -10,7 +10,7 @@ The goal is not to store one large prompt. The goal is to create repository-nati
 - Architecture and planning documents at the repository root.
 - Focused docs for environment, runtime, observability, guardrails, evaluation, operations, reliability, security, and quality.
 - Placeholder directories for execution plans, raw references, distilled reference notes, generated docs, evals, runtime code, tools, and run artifacts.
-- A structural validator in `tools/validate_harness_structure.py`.
+- A structural and guardrail validator in `tools/validate_harness_structure.py`, with task-specific checks in `tools/validate_guardrails.py`.
 
 ## Apply It To A Real Project
 
@@ -159,7 +159,7 @@ The first version of a harness is usually documentation plus a few checks. A mat
 Good next steps after filling placeholders:
 
 - Add a real runner script that wraps `codex exec`.
-- Add structural checks for required docs and directories.
+- Add mechanical checks for required docs, directories, and task schema rules.
 - Add project-specific lint rules for architecture boundaries.
 - Add benchmark tasks under `evals/benchmarks/`.
 - Capture eval results under `evals/results/`.
@@ -167,7 +167,7 @@ Good next steps after filling placeholders:
 
 ## Validation
 
-Run the scaffold validator after changing the framework layout:
+Run the scaffold validator after changing the framework layout or task state:
 
 ```bash
 python tools/validate_harness_structure.py
