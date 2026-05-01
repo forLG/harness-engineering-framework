@@ -151,28 +151,36 @@ def run_codex(
         output_path.write_text(text, encoding="utf-8")
         return 0, text
 
-    if shutil.which(codex_command) is None:
+    resolved_codex = shutil.which(codex_command)
+    if resolved_codex is None:
         text = f"Codex command not found in PATH: {codex_command}\n"
         output_path.write_text(text, encoding="utf-8")
         return 127, text
 
-    command = [codex_command, "exec"]
+    command = [resolved_codex, "exec"]
     if codex_full_auto:
         command.append("--full-auto")
     command.extend(["-C", str(ROOT), invocation_prompt])
 
-    completed = subprocess.run(
-        command,
-        cwd=str(ROOT),
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(ROOT),
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            check=False,
+        )
+    except OSError as exc:
+        text = f"Failed to launch Codex command: {resolved_codex}\n{exc}\n"
+        output_path.write_text(text, encoding="utf-8", errors="replace")
+        return 127, text
     text = (
         "STDOUT:\n"
-        + completed.stdout
+        + (completed.stdout or "")
         + "\nSTDERR:\n"
-        + completed.stderr
+        + (completed.stderr or "")
         + f"\nRETURN_CODE: {completed.returncode}\n"
     )
     output_path.write_text(text, encoding="utf-8", errors="replace")
