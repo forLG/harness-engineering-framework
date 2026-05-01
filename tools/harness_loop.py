@@ -394,6 +394,28 @@ def commit_successful_run(*, task: dict[str, Any], run_id: str) -> CommitResult:
     )
 
 
+def run_entropy_control(mode: str) -> None:
+    if mode == "off":
+        return
+
+    command = [sys.executable, "tools/entropy_control.py", "--report"]
+    if mode == "queue-tasks":
+        command.append("--queue-tasks")
+
+    completed = subprocess.run(
+        command,
+        cwd=str(ROOT),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    print(f"entropy-control: return_code={completed.returncode}")
+    if completed.stdout.strip():
+        print(completed.stdout.strip())
+    if completed.stderr.strip():
+        print(completed.stderr.strip())
+
+
 def write_commit_artifact(run_dir: Path, name: str, result: CommitResult) -> Path:
     path = run_dir / name
     text = f"status: {result.status}\nsummary: {result.summary}\n"
@@ -544,11 +566,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--codex-command", default="codex", help="Codex executable name or path.")
     parser.add_argument("--max-tasks", type=int, default=25, help="Safety cap for --until-empty.")
+    parser.add_argument(
+        "--entropy-control",
+        choices=("off", "report", "queue-tasks"),
+        default="off",
+        help="Run entropy control after task attempts. queue-tasks also creates cleanup tasks.",
+    )
+    parser.add_argument("--entropy-every", type=int, default=1, help="Run entropy control every N task attempts.")
     args = parser.parse_args(argv)
 
     selected_modes = sum(1 for value in (args.once, args.until_empty) if value)
     if selected_modes != 1:
         parser.error("choose exactly one of --once or --until-empty")
+    if args.entropy_every < 1:
+        parser.error("--entropy-every must be at least 1")
 
     count = 0
     while True:
@@ -556,6 +587,8 @@ def main(argv: list[str] | None = None) -> int:
         if not ran:
             break
         count += 1
+        if count % args.entropy_every == 0:
+            run_entropy_control(args.entropy_control)
         if args.once:
             break
         if count >= args.max_tasks:

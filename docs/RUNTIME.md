@@ -13,6 +13,9 @@ This harness uses Codex as the worker agent and a repository-local supervisor sc
 - Harness task loop with successful-run commits: `python tools/harness_loop.py --once --execute --auto-commit`.
 - Batch execution: `python tools/harness_loop.py --until-empty --execute --max-tasks 5`.
 - Harness smoke evals: `python tools/run_evals.py --suite smoke`.
+- Entropy report: `python tools/entropy_control.py --report`.
+- Entropy report with queued cleanup tasks: `python tools/entropy_control.py --report --queue-tasks`.
+- Entropy report with quality score refresh: `python tools/entropy_control.py --report --update-quality-score`.
 
 The supervisor defaults to preview mode. It writes the prompts it would send to Codex without moving task state or invoking the agent.
 
@@ -20,6 +23,7 @@ The supervisor defaults to preview mode. It writes the prompts it would send to 
 
 - `tools/harness_loop.py`: Ralph-style outer loop supervisor.
 - `tools/run_evals.py`: eval runner for benchmark definitions under `evals/benchmarks/`.
+- `tools/entropy_control.py`: maintenance runner for stale docs, doc overlap, bad harness code, queue health, artifact hygiene, eval drift, and quality scoring.
 - `tools/validate_harness_structure.py`: structural and guardrail validator for required harness files, directories, and task state.
 - `tools/validate_guardrails.py`: task schema, naming, and status-directory validator used by the structural validator.
 - `runtime/tasks/TASK_SCHEMA.md`: task file contract.
@@ -40,6 +44,8 @@ The outer loop is:
 9. Move the original task to `runtime/tasks/completed/` or `runtime/tasks/blocked/`.
 10. Save `summary.json` and all role outputs under the run artifact directory.
 11. When auto-commit is enabled and the run succeeded, run `git add --all .` and `git commit`.
+
+Entropy control is outside the core implementation path by default. When `--entropy-control report` or `--entropy-control queue-tasks` is passed to `tools/harness_loop.py`, the supervisor runs `tools/entropy_control.py` after every `--entropy-every` task attempt. This supports scheduled or batch maintenance without making cleanup implicit in normal runs.
 
 Each role must end with `HARNESS_RESULT_JSON:` followed by valid JSON. The supervisor uses that final line to decide the next state.
 
@@ -77,6 +83,18 @@ The loop must stop or mark a task `blocked` when a role requests human escalatio
 - Traces: `artifacts/traces/`
 - Screenshots: `artifacts/screenshots/`
 - Eval results: `evals/results/`
+- Maintenance reports: `artifacts/maintenance/`
+
+## Entropy Control Loop
+
+The entropy loop has four phases:
+
+1. Deterministic report: `tools/entropy_control.py --report` scans for documentation overlap, placeholders, broken local references, undocumented tools, Python compile failures, task queue health, run summary hygiene, eval baseline drift, and quality score inputs.
+2. Queued cleanup tasks: `--queue-tasks` converts high- and medium-severity findings into normal task JSON files under `runtime/tasks/queue/`.
+3. Maintenance planning: `docs/agent-roles/maintenance-planner.md` is available for semantic triage when findings need judgment, grouping, or escalation.
+4. Opt-in automation: `tools/harness_loop.py --entropy-control report` or `--entropy-control queue-tasks` runs entropy control after task attempts on a configurable cadence.
+
+The entropy tool must not silently delete artifacts, rewrite broad documentation, or mutate product code. It reports, refreshes quality scoring when explicitly requested, and queues work for the existing implementer, validator, and reviewer flow.
 
 ## Eval Loop
 

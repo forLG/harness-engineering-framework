@@ -8,9 +8,11 @@ Record architecture, style, safety, and operational rules that should become mec
 
 - Required files and directories are checked by `tools/validate_harness_structure.py`.
 - Task JSON schema, status-directory alignment, task id naming, and filename/id matching are checked by `tools/validate_guardrails.py`.
+- Entropy control findings are checked by `tools/entropy_control.py`.
 - The outer loop task state must live under `runtime/tasks/`.
 - Role definitions must live under `docs/agent-roles/`.
 - Run evidence must live under `artifacts/runs/`.
+- Maintenance evidence must live under `artifacts/maintenance/`.
 - Naming invariants: task ids should be short, lowercase, and stable.
 - File-size invariants: `AGENTS.md` must stay under the validator limit.
 
@@ -100,6 +102,8 @@ Mechanical check location:
 - Task schema checker: implemented in `tools/validate_guardrails.py`.
 - Changed-file requirement checker: project-specific placeholder.
 - Product safety checker: project-specific placeholder.
-- Stale documentation checker:
-- Quality score updater:
-- Eval regression gate:
+- Stale documentation checker: implemented for harness docs in `tools/entropy_control.py`; product-specific freshness rules are added after framework adoption.
+- Documentation overlap and broken-reference checker: implemented for repository-local Markdown in `tools/entropy_control.py`.
+- Harness code quality checker: implemented for `tools/*.py` compile health in `tools/entropy_control.py`.
+- Quality score updater: implemented by `tools/entropy_control.py --update-quality-score`.
+- Eval regression gate: implemented by `tools/run_evals.py`.

@@ -68,15 +68,17 @@ Acceptance criteria:
 
 ### Milestone 5: Entropy Control
 
-Status: placeholder.
+Status: active.
 
 Goal: add recurring maintenance for stale docs, drift, and quality debt.
 
 Acceptance criteria:
 
 - Quality score is updated on a schedule or command.
-- Stale docs are detected.
-- Cleanup tasks are proposed as plans or PRs.
+- Stale docs, documentation overlap, broken local references, and bad harness code are detected.
+- Cleanup tasks are proposed as plans or queued harness tasks.
+- Maintenance reports are preserved under `artifacts/maintenance/`.
+- Entropy control can run manually and can be invoked automatically by the supervisor on an opt-in cadence.
 
 ## Active Plans
 
@@ -87,3 +89,4 @@ Acceptance criteria:
 - `docs/exec-plans/completed/evaluation-loop.md`
 - `docs/exec-plans/completed/baseline-regression.md`
 - `docs/exec-plans/completed/product-eval-template.md`
+- `docs/exec-plans/completed/entropy-control.md`

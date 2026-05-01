@@ -19,6 +19,7 @@ Agent review stages are defined in `docs/agent-roles/`.
 - Validator: should not edit files; verifies reproducibility.
 - Reviewer: should not edit files; reviews task result and artifacts.
 - Follow-up planner: should not edit product files; creates new queued tasks.
+- Maintenance planner: should not edit product files or delete artifacts; turns entropy reports into narrow cleanup tasks or human-escalation notes.
 
 Humans still own product judgment, credentials, production changes, destructive operations, and ambiguous policy decisions.
 
@@ -36,15 +37,37 @@ Rules:
 
 ## Cleanup Loop
 
-Status: placeholder.
+Recurring cleanup uses `tools/entropy_control.py`.
 
-Recurring cleanup should scan for:
+Manual report:
+
+```bash
+python tools/entropy_control.py --report
+```
+
+Report plus queued cleanup tasks:
+
+```bash
+python tools/entropy_control.py --report --queue-tasks
+```
+
+Report plus quality score refresh:
+
+```bash
+python tools/entropy_control.py --report --update-quality-score
+```
+
+The cleanup loop scans for:
 
 - Stale docs.
+- Documentation overlap and broken local references.
+- Bad harness code, starting with Python compile failures in `tools/*.py`.
 - Dead plans.
 - Drift from architecture.
 - Missing eval coverage.
 - Accumulated artifacts that should be summarized or archived.
+
+The cleanup loop controls entropy by reporting findings, writing evidence to `artifacts/maintenance/`, optionally creating queued tasks, and leaving implementation to the normal agent review flow. Automatic cleanup is opt-in through `tools/harness_loop.py --entropy-control report` or `--entropy-control queue-tasks`; direct deletion or broad rewriting still requires human judgment.
 
 ## Technical Debt
 

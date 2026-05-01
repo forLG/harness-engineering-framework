@@ -12,6 +12,7 @@ The goal is not to store one large prompt. The goal is to create repository-nati
 - Placeholder directories for execution plans, raw references, distilled reference notes, generated docs, evals, runtime code, tools, and run artifacts.
 - A structural and guardrail validator in `tools/validate_harness_structure.py`, with task-specific checks in `tools/validate_guardrails.py`.
 - A smoke evaluation runner in `tools/run_evals.py`, with starter benchmark definitions under `evals/benchmarks/`.
+- An entropy control runner in `tools/entropy_control.py` for stale docs, overlap, bad harness code, queue health, artifacts, eval drift, and quality scoring.
 
 ## Apply It To A Real Project
 
@@ -107,7 +108,7 @@ codex -C path/to/real-project
 Use non-interactive Codex for automation, CI, scheduled cleanup, or benchmark tasks:
 
 ```bash
-codex exec -C path/to/real-project "Implement the active plan in docs/exec-plans/active/example.md"
+codex exec -C path/to/real-project "Implement the active plan in docs/exec-plans/active/<plan>.md"
 ```
 
 Use JSON output when a harness runner needs to capture events:
@@ -121,6 +122,7 @@ Store run outputs in:
 - `artifacts/logs/`
 - `artifacts/traces/`
 - `artifacts/screenshots/`
+- `artifacts/maintenance/`
 - `evals/results/`
 
 ## References
@@ -152,6 +154,34 @@ python tools/harness_loop.py --once --execute --auto-commit
 ```
 
 Auto-commit requires a clean Git worktree before the task starts, commits only after validator and reviewer approval, and never pushes.
+
+## Entropy Control
+
+Run a deterministic entropy report when the harness starts to drift:
+
+```bash
+python tools/entropy_control.py --report
+```
+
+The report checks documentation placeholders and overlap, broken local references, undocumented tools, Python compile health for harness tools, task queue health, run artifact summaries, eval baselines, and quality score inputs. It writes JSON and Markdown artifacts under `artifacts/maintenance/`.
+
+To turn high- and medium-severity findings into normal queued tasks:
+
+```bash
+python tools/entropy_control.py --report --queue-tasks
+```
+
+To refresh `docs/QUALITY_SCORE.md` from the latest report:
+
+```bash
+python tools/entropy_control.py --report --update-quality-score
+```
+
+The outer task loop can run entropy control after task attempts, but this is opt-in:
+
+```bash
+python tools/harness_loop.py --until-empty --execute --entropy-control report --entropy-every 5
+```
 
 ## From Documentation To Harness
 

@@ -32,6 +32,7 @@ REQUIRED_PATHS = [
     "docs/agent-roles/validator.md",
     "docs/agent-roles/reviewer.md",
     "docs/agent-roles/followup-planner.md",
+    "docs/agent-roles/maintenance-planner.md",
     "references",
     "references/README.md",
     "references/openai-harness-engineering.md",
@@ -45,6 +46,7 @@ REQUIRED_PATHS = [
     "tools",
     "tools/harness_loop.py",
     "tools/run_evals.py",
+    "tools/entropy_control.py",
     "evals/baselines",
     "evals/benchmarks",
     "evals/benchmarks/product-template",
@@ -58,6 +60,7 @@ REQUIRED_PATHS = [
     "artifacts/runs",
     "artifacts/reviews",
     "artifacts/validation",
+    "artifacts/maintenance",
 ]
 
 MAX_AGENTS_BYTES = 6000
