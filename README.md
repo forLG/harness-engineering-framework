@@ -108,13 +108,13 @@ codex -C path/to/real-project
 Use non-interactive Codex for automation, CI, scheduled cleanup, or benchmark tasks:
 
 ```bash
-codex exec -C path/to/real-project "Implement the active plan in docs/exec-plans/active/<plan>.md"
+codex exec --full-auto -C path/to/real-project "Implement the active plan in docs/exec-plans/active/<plan>.md"
 ```
 
 Use JSON output when a harness runner needs to capture events:
 
 ```bash
-codex exec --json -C path/to/real-project "Run the harness evaluation plan"
+codex exec --full-auto --json -C path/to/real-project "Run the harness evaluation plan"
 ```
 
 Store run outputs in:
@@ -144,6 +144,8 @@ Preview mode writes the implementer, validator, and reviewer prompts into `artif
 ```bash
 python tools/harness_loop.py --once --execute
 ```
+
+Execute mode invokes role agents with `codex exec --full-auto -C <repo> ...` by default. This keeps non-interactive runs from stalling on routine permission prompts while preserving Codex sandboxing. Use `--no-codex-full-auto` to preserve normal Codex approval prompts.
 
 Queued tasks live in `runtime/tasks/queue/` as JSON files. The supervisor moves tasks through `active`, `completed`, and `blocked`, saves role outputs in `artifacts/runs/`, and can create follow-up queued tasks when validation or review finds unfinished work.
 

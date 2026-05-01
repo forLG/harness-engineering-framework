@@ -7,7 +7,7 @@ This harness uses Codex as the worker agent and a repository-local supervisor sc
 ## Invocation Modes
 
 - Human-supervised interactive runs: `codex -C <project>`.
-- One-shot non-interactive runs: `codex exec -C <project> "<prompt>"`.
+- One-shot non-interactive runs: `codex exec --full-auto -C <project> "<prompt>"`.
 - Harness task loop preview: `python tools/harness_loop.py --once`.
 - Harness task loop execution: `python tools/harness_loop.py --once --execute`.
 - Harness task loop with successful-run commits: `python tools/harness_loop.py --once --execute --auto-commit`.
@@ -18,6 +18,8 @@ This harness uses Codex as the worker agent and a repository-local supervisor sc
 - Entropy report with quality score refresh: `python tools/entropy_control.py --report --update-quality-score`.
 
 The supervisor defaults to preview mode. It writes the prompts it would send to Codex without moving task state or invoking the agent.
+
+When `--execute` is used, the supervisor invokes role agents with `codex exec --full-auto -C <repo> ...` by default. `--full-auto` is the sandboxed low-friction Codex mode; it is not the dangerous approval-and-sandbox bypass mode. Use `--no-codex-full-auto` when a harness run should preserve Codex's normal approval prompts instead.
 
 ## Runner Entrypoints
 
@@ -65,7 +67,7 @@ Auto-commit preflight requires a clean Git worktree before the task starts. If t
 Humans can supervise at three points:
 
 - Before execution: run `python tools/harness_loop.py --once` to inspect prompts.
-- During execution: use Codex's normal approval and permission flow.
+- During execution: the supervisor defaults to Codex `--full-auto`, so safe workspace commands can run without an interactive approval prompt while still using Codex sandboxing.
 - After execution: inspect `artifacts/runs/<run-id>/summary.json`, role outputs, and queued follow-up tasks.
 
 The loop must stop or mark a task `blocked` when a role requests human escalation.
@@ -112,9 +114,9 @@ Smoke evals run in preview mode and do not invoke Codex. By default, suite resul
 
 ## Open Decisions
 
-- Codex invocation method: `codex exec -C <repo> "<assembled prompt>"`.
+- Codex invocation method: `codex exec --full-auto -C <repo> "<assembled prompt>"` for supervisor execute mode.
 - Interactive command: `codex -C <repo>`.
 - Non-interactive command: managed by `tools/harness_loop.py`.
-- Approval policy: Codex's local approval flow plus role-level escalation rules; auto-commit is local-only and never pushes.
+- Approval policy: supervisor execute mode uses Codex's sandboxed `--full-auto` mode by default, plus role-level escalation rules; auto-commit is local-only and never pushes.
 - JSON or trace format: role outputs use `HARNESS_RESULT_JSON`; run summary uses JSON.
 - Resume strategy: continue from task files and artifacts, not hidden process memory.

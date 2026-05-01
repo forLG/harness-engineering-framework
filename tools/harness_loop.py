@@ -140,6 +140,7 @@ The text after the marker must be valid compact JSON matching the role output co
 def run_codex(
     *,
     codex_command: str,
+    codex_full_auto: bool,
     invocation_prompt: str,
     output_path: Path,
     execute: bool,
@@ -155,8 +156,13 @@ def run_codex(
         output_path.write_text(text, encoding="utf-8")
         return 127, text
 
+    command = [codex_command, "exec"]
+    if codex_full_auto:
+        command.append("--full-auto")
+    command.extend(["-C", str(ROOT), invocation_prompt])
+
     completed = subprocess.run(
-        [codex_command, "exec", "-C", str(ROOT), invocation_prompt],
+        command,
         cwd=str(ROOT),
         text=True,
         capture_output=True,
@@ -222,6 +228,7 @@ def run_stage(
     run_dir: Path,
     previous_artifacts: list[Path],
     codex_command: str,
+    codex_full_auto: bool,
     execute: bool,
 ) -> StageResult:
     prompt = build_prompt(
@@ -240,6 +247,7 @@ def run_stage(
     )
     return_code, text = run_codex(
         codex_command=codex_command,
+        codex_full_auto=codex_full_auto,
         invocation_prompt=invocation_prompt,
         output_path=output_path,
         execute=execute,
@@ -427,7 +435,7 @@ def write_commit_artifact(run_dir: Path, name: str, result: CommitResult) -> Pat
     return path
 
 
-def run_one(*, codex_command: str, execute: bool, auto_commit: bool) -> bool:
+def run_one(*, codex_command: str, codex_full_auto: bool, execute: bool, auto_commit: bool) -> bool:
     task_path = next_task()
     if task_path is None:
         print("No queued tasks found.")
@@ -455,6 +463,7 @@ def run_one(*, codex_command: str, execute: bool, auto_commit: bool) -> bool:
                     "run_id": run_id,
                     "task_id": task["id"],
                     "execute": execute,
+                    "codex_full_auto": codex_full_auto,
                     "commit_policy": selected_commit_mode,
                     "results": [],
                     "commit_preflight": {
@@ -478,6 +487,7 @@ def run_one(*, codex_command: str, execute: bool, auto_commit: bool) -> bool:
     if not execute:
         print("Preview mode: prompts will be written, but Codex will not be invoked.")
     else:
+        print(f"Codex full-auto: {'enabled' if codex_full_auto else 'disabled'}")
         update_task_status(task, "active", run_id, [str(run_dir.relative_to(ROOT))])
         task_path = move_task(task_path, ACTIVE_DIR, task)
 
@@ -492,6 +502,7 @@ def run_one(*, codex_command: str, execute: bool, auto_commit: bool) -> bool:
             run_dir=run_dir,
             previous_artifacts=artifacts,
             codex_command=codex_command,
+            codex_full_auto=codex_full_auto,
             execute=execute,
         )
         results.append(result)
@@ -514,6 +525,7 @@ def run_one(*, codex_command: str, execute: bool, auto_commit: bool) -> bool:
             run_dir=run_dir,
             previous_artifacts=artifacts,
             codex_command=codex_command,
+            codex_full_auto=codex_full_auto,
             execute=execute,
         )
         results.append(planner)
@@ -525,6 +537,7 @@ def run_one(*, codex_command: str, execute: bool, auto_commit: bool) -> bool:
         "run_id": run_id,
         "task_id": task["id"],
         "execute": execute,
+        "codex_full_auto": codex_full_auto if execute else False,
         "commit_policy": selected_commit_mode,
         "results": [
             {
@@ -565,6 +578,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Commit successful task runs after validation passes and review approves.",
     )
     parser.add_argument("--codex-command", default="codex", help="Codex executable name or path.")
+    parser.add_argument(
+        "--no-codex-full-auto",
+        action="store_true",
+        help="Do not pass --full-auto to codex exec during --execute runs.",
+    )
     parser.add_argument("--max-tasks", type=int, default=25, help="Safety cap for --until-empty.")
     parser.add_argument(
         "--entropy-control",
@@ -583,7 +601,12 @@ def main(argv: list[str] | None = None) -> int:
 
     count = 0
     while True:
-        ran = run_one(codex_command=args.codex_command, execute=args.execute, auto_commit=args.auto_commit)
+        ran = run_one(
+            codex_command=args.codex_command,
+            codex_full_auto=not args.no_codex_full_auto,
+            execute=args.execute,
+            auto_commit=args.auto_commit,
+        )
         if not ran:
             break
         count += 1
