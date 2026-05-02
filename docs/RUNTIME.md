@@ -19,7 +19,7 @@ This harness uses Codex as the worker agent and a repository-local supervisor sc
 
 The supervisor defaults to preview mode. It writes the prompts it would send to Codex without moving task state or invoking the agent.
 
-When `--execute` is used, the supervisor invokes role agents with `codex exec --full-auto -C <repo> ...` by default. `--full-auto` is the sandboxed low-friction Codex mode; it is not the dangerous approval-and-sandbox bypass mode. Use `--no-codex-full-auto` when a harness run should preserve Codex's normal approval prompts instead.
+When `--execute` is used, the supervisor invokes role agents with `codex exec --full-auto -C <repo> ...`. `--full-auto` is the sandboxed low-friction Codex mode; it is not the dangerous approval-and-sandbox bypass mode.
 
 ## Runner Entrypoints
 
@@ -47,7 +47,7 @@ The outer loop is:
 10. Save `summary.json` and all role outputs under the run artifact directory.
 11. When auto-commit is enabled and the run succeeded, run `git add --all .` and `git commit`.
 
-Entropy control is outside the core implementation path by default. When `--entropy-control report` or `--entropy-control queue-tasks` is passed to `tools/harness_loop.py`, the supervisor runs `tools/entropy_control.py` after every `--entropy-every` task attempt. This supports scheduled or batch maintenance without making cleanup implicit in normal runs.
+Entropy control is outside the core implementation path. Run `tools/entropy_control.py` directly for scheduled or batch maintenance.
 
 Each role must end with `HARNESS_RESULT_JSON:` followed by valid JSON. The supervisor uses that final line to decide the next state.
 
@@ -67,7 +67,7 @@ Auto-commit preflight requires a clean Git worktree before the task starts. If t
 Humans can supervise at three points:
 
 - Before execution: run `python tools/harness_loop.py --once` to inspect prompts.
-- During execution: the supervisor defaults to Codex `--full-auto`, so safe workspace commands can run without an interactive approval prompt while still using Codex sandboxing.
+- During execution: the supervisor uses Codex `--full-auto`, so safe workspace commands can run without an interactive approval prompt while still using Codex sandboxing.
 - After execution: inspect `artifacts/runs/<run-id>/summary.json`, role outputs, and queued follow-up tasks.
 
 The loop must stop or mark a task `blocked` when a role requests human escalation.
@@ -94,7 +94,7 @@ The entropy loop has four phases:
 1. Deterministic report: `tools/entropy_control.py --report` scans for documentation overlap, placeholders, broken local references, undocumented tools, Python compile failures, task queue health, run summary hygiene, eval baseline drift, and quality score inputs.
 2. Queued cleanup tasks: `--queue-tasks` converts high- and medium-severity findings into normal task JSON files under `runtime/tasks/queue/`.
 3. Maintenance planning: `docs/agent-roles/maintenance-planner.md` is available for semantic triage when findings need judgment, grouping, or escalation.
-4. Opt-in automation: `tools/harness_loop.py --entropy-control report` or `--entropy-control queue-tasks` runs entropy control after task attempts on a configurable cadence.
+4. Maintenance scheduling: run `tools/entropy_control.py --report` or `tools/entropy_control.py --report --queue-tasks` outside the task loop when cleanup checks are needed.
 
 The entropy tool must not silently delete artifacts, rewrite broad documentation, or mutate product code. It reports, refreshes quality scoring when explicitly requested, and queues work for the existing implementer, validator, and reviewer flow.
 

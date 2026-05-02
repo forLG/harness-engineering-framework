@@ -67,7 +67,7 @@ The cleanup loop scans for:
 - Missing eval coverage.
 - Accumulated artifacts that should be summarized or archived.
 
-The cleanup loop controls entropy by reporting findings, writing evidence to `artifacts/maintenance/`, optionally creating queued tasks, and leaving implementation to the normal agent review flow. Automatic cleanup is opt-in through `tools/harness_loop.py --entropy-control report` or `--entropy-control queue-tasks`; direct deletion or broad rewriting still requires human judgment.
+The cleanup loop controls entropy by reporting findings, writing evidence to `artifacts/maintenance/`, optionally creating queued tasks, and leaving implementation to the normal agent review flow. Run it directly with `tools/entropy_control.py --report` or `tools/entropy_control.py --report --queue-tasks`; direct deletion or broad rewriting still requires human judgment.
 
 ## Technical Debt
 

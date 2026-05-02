@@ -19,11 +19,10 @@ ACTIVE_DIR = TASK_ROOT / "active"
 COMPLETED_DIR = TASK_ROOT / "completed"
 BLOCKED_DIR = TASK_ROOT / "blocked"
 RUNS_DIR = ROOT / "artifacts" / "runs"
-REVIEWS_DIR = ROOT / "artifacts" / "reviews"
-VALIDATION_DIR = ROOT / "artifacts" / "validation"
 ROLE_DIR = ROOT / "docs" / "agent-roles"
 
 RESULT_MARKER = "HARNESS_RESULT_JSON:"
+CODEX_COMMAND = "codex"
 
 
 @dataclass
@@ -139,8 +138,6 @@ The text after the marker must be valid compact JSON matching the role output co
 
 def run_codex(
     *,
-    codex_command: str,
-    codex_full_auto: bool,
     invocation_prompt: str,
     output_path: Path,
     execute: bool,
@@ -151,16 +148,13 @@ def run_codex(
         output_path.write_text(text, encoding="utf-8")
         return 0, text
 
-    resolved_codex = shutil.which(codex_command)
+    resolved_codex = shutil.which(CODEX_COMMAND)
     if resolved_codex is None:
-        text = f"Codex command not found in PATH: {codex_command}\n"
+        text = f"Codex command not found in PATH: {CODEX_COMMAND}\n"
         output_path.write_text(text, encoding="utf-8")
         return 127, text
 
-    command = [resolved_codex, "exec"]
-    if codex_full_auto:
-        command.append("--full-auto")
-    command.extend(["-C", str(ROOT), invocation_prompt])
+    command = [resolved_codex, "exec", "--full-auto", "-C", str(ROOT), invocation_prompt]
 
     try:
         completed = subprocess.run(
@@ -235,8 +229,6 @@ def run_stage(
     task: dict[str, Any],
     run_dir: Path,
     previous_artifacts: list[Path],
-    codex_command: str,
-    codex_full_auto: bool,
     execute: bool,
 ) -> StageResult:
     prompt = build_prompt(
@@ -254,8 +246,6 @@ def run_stage(
         f"End with the required {RESULT_MARKER} line."
     )
     return_code, text = run_codex(
-        codex_command=codex_command,
-        codex_full_auto=codex_full_auto,
         invocation_prompt=invocation_prompt,
         output_path=output_path,
         execute=execute,
@@ -410,28 +400,6 @@ def commit_successful_run(*, task: dict[str, Any], run_id: str) -> CommitResult:
     )
 
 
-def run_entropy_control(mode: str) -> None:
-    if mode == "off":
-        return
-
-    command = [sys.executable, "tools/entropy_control.py", "--report"]
-    if mode == "queue-tasks":
-        command.append("--queue-tasks")
-
-    completed = subprocess.run(
-        command,
-        cwd=str(ROOT),
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    print(f"entropy-control: return_code={completed.returncode}")
-    if completed.stdout.strip():
-        print(completed.stdout.strip())
-    if completed.stderr.strip():
-        print(completed.stderr.strip())
-
-
 def write_commit_artifact(run_dir: Path, name: str, result: CommitResult) -> Path:
     path = run_dir / name
     text = f"status: {result.status}\nsummary: {result.summary}\n"
@@ -443,7 +411,7 @@ def write_commit_artifact(run_dir: Path, name: str, result: CommitResult) -> Pat
     return path
 
 
-def run_one(*, codex_command: str, codex_full_auto: bool, execute: bool, auto_commit: bool) -> bool:
+def run_one(*, execute: bool, auto_commit: bool) -> bool:
     task_path = next_task()
     if task_path is None:
         print("No queued tasks found.")
@@ -471,7 +439,6 @@ def run_one(*, codex_command: str, codex_full_auto: bool, execute: bool, auto_co
                     "run_id": run_id,
                     "task_id": task["id"],
                     "execute": execute,
-                    "codex_full_auto": codex_full_auto,
                     "commit_policy": selected_commit_mode,
                     "results": [],
                     "commit_preflight": {
@@ -495,7 +462,7 @@ def run_one(*, codex_command: str, codex_full_auto: bool, execute: bool, auto_co
     if not execute:
         print("Preview mode: prompts will be written, but Codex will not be invoked.")
     else:
-        print(f"Codex full-auto: {'enabled' if codex_full_auto else 'disabled'}")
+        print("Codex command: codex exec --full-auto")
         update_task_status(task, "active", run_id, [str(run_dir.relative_to(ROOT))])
         task_path = move_task(task_path, ACTIVE_DIR, task)
 
@@ -509,8 +476,6 @@ def run_one(*, codex_command: str, codex_full_auto: bool, execute: bool, auto_co
             task=task,
             run_dir=run_dir,
             previous_artifacts=artifacts,
-            codex_command=codex_command,
-            codex_full_auto=codex_full_auto,
             execute=execute,
         )
         results.append(result)
@@ -532,8 +497,6 @@ def run_one(*, codex_command: str, codex_full_auto: bool, execute: bool, auto_co
             task=task,
             run_dir=run_dir,
             previous_artifacts=artifacts,
-            codex_command=codex_command,
-            codex_full_auto=codex_full_auto,
             execute=execute,
         )
         results.append(planner)
@@ -545,7 +508,6 @@ def run_one(*, codex_command: str, codex_full_auto: bool, execute: bool, auto_co
         "run_id": run_id,
         "task_id": task["id"],
         "execute": execute,
-        "codex_full_auto": codex_full_auto if execute else False,
         "commit_policy": selected_commit_mode,
         "results": [
             {
@@ -585,41 +547,19 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Commit successful task runs after validation passes and review approves.",
     )
-    parser.add_argument("--codex-command", default="codex", help="Codex executable name or path.")
-    parser.add_argument(
-        "--no-codex-full-auto",
-        action="store_true",
-        help="Do not pass --full-auto to codex exec during --execute runs.",
-    )
     parser.add_argument("--max-tasks", type=int, default=25, help="Safety cap for --until-empty.")
-    parser.add_argument(
-        "--entropy-control",
-        choices=("off", "report", "queue-tasks"),
-        default="off",
-        help="Run entropy control after task attempts. queue-tasks also creates cleanup tasks.",
-    )
-    parser.add_argument("--entropy-every", type=int, default=1, help="Run entropy control every N task attempts.")
     args = parser.parse_args(argv)
 
     selected_modes = sum(1 for value in (args.once, args.until_empty) if value)
     if selected_modes != 1:
         parser.error("choose exactly one of --once or --until-empty")
-    if args.entropy_every < 1:
-        parser.error("--entropy-every must be at least 1")
 
     count = 0
     while True:
-        ran = run_one(
-            codex_command=args.codex_command,
-            codex_full_auto=not args.no_codex_full_auto,
-            execute=args.execute,
-            auto_commit=args.auto_commit,
-        )
+        ran = run_one(execute=args.execute, auto_commit=args.auto_commit)
         if not ran:
             break
         count += 1
-        if count % args.entropy_every == 0:
-            run_entropy_control(args.entropy_control)
         if args.once:
             break
         if count >= args.max_tasks:

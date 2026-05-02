@@ -16,7 +16,7 @@ Add a four-phase entropy control loop for the harness:
 - Added `tools/entropy_control.py`.
 - Added maintenance artifacts under `artifacts/maintenance/`.
 - Added `docs/agent-roles/maintenance-planner.md`.
-- Added opt-in `tools/harness_loop.py --entropy-control report|queue-tasks`.
+- Added opt-in harness-loop entropy automation, later superseded by direct `tools/entropy_control.py` maintenance runs.
 - Updated runtime, operations, guardrails, observability, README, roadmap, quality score, and structural validation docs.
 - Preserved the final entropy report at `artifacts/maintenance/20260501T083906Z-entropy-control.json`.
 

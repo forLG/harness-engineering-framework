@@ -145,7 +145,7 @@ Preview mode writes the implementer, validator, and reviewer prompts into `artif
 python tools/harness_loop.py --once --execute
 ```
 
-Execute mode invokes role agents with `codex exec --full-auto -C <repo> ...` by default. This keeps non-interactive runs from stalling on routine permission prompts while preserving Codex sandboxing. Use `--no-codex-full-auto` to preserve normal Codex approval prompts.
+Execute mode invokes role agents with `codex exec --full-auto -C <repo> ...`. This keeps non-interactive runs from stalling on routine permission prompts while preserving Codex sandboxing.
 
 Queued tasks live in `runtime/tasks/queue/` as JSON files. The supervisor moves tasks through `active`, `completed`, and `blocked`, saves role outputs in `artifacts/runs/`, and can create follow-up queued tasks when validation or review finds unfinished work.
 
@@ -179,11 +179,7 @@ To refresh `docs/QUALITY_SCORE.md` from the latest report:
 python tools/entropy_control.py --report --update-quality-score
 ```
 
-The outer task loop can run entropy control after task attempts, but this is opt-in:
-
-```bash
-python tools/harness_loop.py --until-empty --execute --entropy-control report --entropy-every 5
-```
+Entropy control is intentionally run as a standalone maintenance command rather than as part of the outer task loop.
 
 ## From Documentation To Harness
 
