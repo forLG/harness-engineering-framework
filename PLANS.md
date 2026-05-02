@@ -1,12 +1,18 @@
 # Plans
 
+Status: scaffold.
+
 This file is the plan index. Keep active execution detail in `docs/exec-plans/active/` and completed plans in `docs/exec-plans/completed/`.
 
-## Current Roadmap
+For the open-source framework, this document tracks framework work. When the scaffold is copied into a real project, keep the structure but replace the applied project section with repository-grounded milestones. Do not invent a fictional app roadmap in the framework repository.
+
+## Current Framework Roadmap
+
+Status: implemented.
 
 ### Milestone 1: Framework Skeleton
 
-Status: active.
+Status: implemented.
 
 Goal: establish a repo-legible harness foundation with short entry points, durable docs, placeholder directories, and a structural validator.
 
@@ -19,7 +25,7 @@ Acceptance criteria:
 
 ### Milestone 2: Runtime Prototype
 
-Status: active.
+Status: implemented.
 
 Goal: implement the minimal Ralph-style outer task loop.
 
@@ -37,7 +43,7 @@ Acceptance criteria:
 
 ### Milestone 3: Mechanical Guardrails
 
-Status: active.
+Status: implemented.
 
 Goal: convert architecture and quality rules into checks.
 
@@ -52,7 +58,7 @@ Acceptance criteria:
 
 ### Milestone 4: Evaluation Loop
 
-Status: active.
+Status: implemented.
 
 Goal: add repeatable evals with cost, latency, and quality reporting.
 
@@ -68,7 +74,7 @@ Acceptance criteria:
 
 ### Milestone 5: Entropy Control
 
-Status: active.
+Status: implemented.
 
 Goal: add recurring maintenance for stale docs, drift, and quality debt.
 
@@ -80,16 +86,18 @@ Acceptance criteria:
 - Maintenance reports are preserved under `artifacts/maintenance/`.
 - Entropy control can run manually and can be invoked automatically by the supervisor on an opt-in cadence.
 
-## Active Plans
+## Applied Project Plan Template
 
-- None yet.
+Use this section only after copying the framework into a target repository. Replace these entries with facts discovered from that project.
 
-## Completed Plans
+### Milestone 1: Project Harness Orientation
 
-- `docs/exec-plans/completed/evaluation-loop.md`
-- `docs/exec-plans/completed/baseline-regression.md`
-- `docs/exec-plans/completed/product-eval-template.md`
-- `docs/exec-plans/completed/entropy-control.md`
-- `docs/exec-plans/completed/placeholder-standardization.md`
-- `docs/exec-plans/completed/status-placeholder-language.md`
-- `docs/exec-plans/completed/intentional-placeholder-inventory.md`
+Status: project-specific.
+
+Goal: `PROJECT_PLACEHOLDER(first-project-milestone-goal): define the first realistic milestone for applying the harness to this repository.`
+
+Acceptance criteria:
+
+- `PROJECT_PLACEHOLDER(project-orientation): AGENTS.md, ARCHITECTURE.md, and docs/ENVIRONMENT.md reflect the target repository's actual structure, setup, and validation commands.`
+- `PROJECT_PLACEHOLDER(project-validation): the target project's normal validation commands are documented and at least one safe command has been run.`
+- `PROJECT_PLACEHOLDER(project-evidence): useful setup, validation, or failure evidence is preserved under artifacts/ when it explains a decision.`
