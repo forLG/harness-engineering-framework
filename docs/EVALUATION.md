@@ -1,6 +1,6 @@
 # Evaluation
 
-Status: smoke loop implemented.
+Status: implemented.
 
 The evaluation loop is split into a framework-generic runner and project- or product-specific benchmark content. The runner checks whether the harness can assemble prompts, preserve artifacts, run validators, and report regressions. Benchmark task files define the work surface being tested.
 
@@ -80,7 +80,7 @@ To add product evals after this scaffold is applied to a real project:
 1. Copy `evals/benchmarks/product-template/` to `evals/benchmarks/<product-benchmark-id>/`.
 2. Rename `benchmark.template.json` to `benchmark.json`.
 3. Rename `task.template.json` to `task.json`.
-4. Replace every `TODO` with target-project facts.
+4. Replace every `PROJECT_PLACEHOLDER(...)` value with target-project facts.
 5. Run the product suite without a baseline while calibrating it:
 
 ```bash
@@ -126,7 +126,7 @@ Baselines do not record timestamps, run ids, artifact directories, stdout, stder
 
 ## Regression Policy
 
-Status: baseline comparison implemented.
+Status: implemented.
 
 The eval runner exits nonzero when any selected benchmark fails or when the current result regresses from the tracked baseline. This makes regressions visible before merge in local checks or CI.
 

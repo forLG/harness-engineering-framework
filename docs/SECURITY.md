@@ -1,15 +1,15 @@
 # Security
 
-Status: placeholder.
+Status: scaffold.
 
 Define the harness security model before connecting production systems or sensitive repositories.
 
 ## Secrets
 
-- Storage:
-- Access:
-- Rotation:
-- Redaction:
+- Storage: `PROJECT_PLACEHOLDER(secret-storage): name approved secret stores, local env files, and files that must never contain secrets.`
+- Access: `PROJECT_PLACEHOLDER(secret-access): define who or what may access secrets and which tasks require human approval.`
+- Rotation: `PROJECT_PLACEHOLDER(secret-rotation): define rotation ownership and escalation steps after exposure.`
+- Redaction: `PROJECT_PLACEHOLDER(secret-redaction): define log, trace, screenshot, and artifact redaction requirements.`
 
 ## Permissions
 
@@ -23,9 +23,9 @@ The Ralph loop may create local commits only when auto-commit is explicitly enab
 
 ## Data Handling
 
-- Sensitive files:
-- External uploads:
-- Logs and traces:
+- Sensitive files: `PROJECT_PLACEHOLDER(sensitive-files): list source paths, config files, data exports, and generated artifacts that require special handling.`
+- External uploads: `PROJECT_PLACEHOLDER(external-uploads): define whether agents may upload artifacts, logs, screenshots, or source snippets outside the repository.`
+- Logs and traces: `PROJECT_PLACEHOLDER(log-trace-data): define data classes that must be redacted or excluded from preserved evidence.`
 
 ## Human Escalation
 

@@ -1,6 +1,6 @@
 # Guardrails
 
-Status: initial scaffold.
+Status: scaffold.
 
 Record architecture, style, safety, and operational rules that should become mechanical checks.
 
@@ -18,60 +18,60 @@ Record architecture, style, safety, and operational rules that should become mec
 
 ## Product-Specific Guardrails
 
-Status: project-specific placeholder.
+Status: project-specific.
 
 Fill these sections only when applying the framework to a real repository. The generic framework should provide the enforcement pattern, not invent product facts.
 
-### Dependency Boundaries
+### Dependency Boundary Checks
 
-Status: project-specific placeholder.
+Status: project-specific.
 
 Define allowed and forbidden dependencies, then encode them as a mechanical check.
 
-Fill later:
+Project placeholders:
 
-- `TODO: allowed imports between source layers or packages.`
-- `TODO: forbidden imports between source layers or packages.`
-- `TODO: generated file paths and edit policy.`
-- `TODO: dependency-boundary exceptions and their owners.`
+- `PROJECT_PLACEHOLDER(allowed-imports): allowed imports between source layers or packages.`
+- `PROJECT_PLACEHOLDER(forbidden-imports): forbidden imports between source layers or packages.`
+- `PROJECT_PLACEHOLDER(generated-file-policy): generated file paths and edit policy.`
+- `PROJECT_PLACEHOLDER(dependency-exceptions): dependency-boundary exceptions and their owners.`
 
 Mechanical check location:
 
-- `TODO: tools/check_dependency_boundaries.py, existing linter config, or CI import-boundary rule.`
+- `PROJECT_PLACEHOLDER(dependency-boundary-check): repository-local checker path, existing linter config, or CI import-boundary rule.`
 
 ### Changed-File Requirements
 
-Status: project-specific placeholder.
+Status: project-specific.
 
 Define validation commands required by changed paths.
 
-Fill later:
+Project placeholders:
 
-- `TODO: frontend or UI changes require build, lint, and UI verification.`
-- `TODO: API or contract changes require contract tests.`
-- `TODO: database migration changes require migration validation.`
-- `TODO: security-sensitive changes require reviewer or human approval.`
+- `PROJECT_PLACEHOLDER(frontend-validation): frontend or UI changes require build, lint, and UI verification.`
+- `PROJECT_PLACEHOLDER(api-validation): API or contract changes require contract tests.`
+- `PROJECT_PLACEHOLDER(migration-validation): database migration changes require migration validation.`
+- `PROJECT_PLACEHOLDER(security-review): security-sensitive changes require reviewer or human approval.`
 
 Mechanical check location:
 
-- `TODO: tools/check_changed_file_requirements.py or CI path filter.`
+- `PROJECT_PLACEHOLDER(changed-file-check): repository-local checker path or CI path filter.`
 
 ### Product Safety Rules
 
-Status: project-specific placeholder.
+Status: project-specific.
 
 Define product-specific restrictions that require escalation or special evidence.
 
-Fill later:
+Project placeholders:
 
-- `TODO: production mutation restrictions.`
-- `TODO: credential, secret, and environment-variable handling rules.`
-- `TODO: deployment approval rules.`
-- `TODO: external service mutation rules.`
+- `PROJECT_PLACEHOLDER(production-mutations): production mutation restrictions.`
+- `PROJECT_PLACEHOLDER(secret-handling): credential, secret, and environment-variable handling rules.`
+- `PROJECT_PLACEHOLDER(deployment-approval): deployment approval rules.`
+- `PROJECT_PLACEHOLDER(external-service-mutations): external service mutation rules.`
 
 Mechanical check location:
 
-- `TODO: docs/SECURITY.md, tools/check_product_safety.py, CI policy gate, or deployment workflow.`
+- `PROJECT_PLACEHOLDER(product-safety-check): docs/SECURITY.md section, repository-local checker path, CI policy gate, or deployment workflow.`
 
 ## Tool Rules
 
@@ -91,6 +91,7 @@ Mechanical check location:
 
 - `AGENTS.md` must remain concise.
 - Durable knowledge belongs in focused docs.
+- Status, placeholder, and framework work language must follow `docs/product-specs/language-conventions.md`.
 - Active execution plans belong in `docs/exec-plans/active/`.
 - Role-specific behavior belongs in `docs/agent-roles/`, not in `AGENTS.md`.
 - Machine-readable task state belongs in JSON files under `runtime/tasks/`.
@@ -98,10 +99,10 @@ Mechanical check location:
 
 ## Future Checks
 
-- Dependency boundary checker: project-specific placeholder.
+- Dependency boundary checker: `PROJECT_PLACEHOLDER(dependency-boundary-check): choose or create the project-specific enforcement mechanism.`
 - Task schema checker: implemented in `tools/validate_guardrails.py`.
-- Changed-file requirement checker: project-specific placeholder.
-- Product safety checker: project-specific placeholder.
+- Changed-file requirement checker: `PROJECT_PLACEHOLDER(changed-file-check): choose or create the project-specific enforcement mechanism.`
+- Product safety checker: `PROJECT_PLACEHOLDER(product-safety-check): choose or create the project-specific enforcement mechanism.`
 - Stale documentation checker: implemented for harness docs in `tools/entropy_control.py`; product-specific freshness rules are added after framework adoption.
 - Documentation overlap and broken-reference checker: implemented for repository-local Markdown in `tools/entropy_control.py`.
 - Harness code quality checker: implemented for `tools/*.py` compile health in `tools/entropy_control.py`.

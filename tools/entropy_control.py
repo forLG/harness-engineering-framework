@@ -35,6 +35,28 @@ COMMON_HEADINGS = {
     "status",
     "verification",
 }
+ALLOWED_STATUS_VALUES = {
+    "active",
+    "blocked",
+    "completed",
+    "deprecated",
+    "generated",
+    "implemented",
+    "project-specific",
+    "scaffold",
+}
+CORE_STATUS_DOCS = {
+    "ARCHITECTURE.md",
+    "PLANS.md",
+    "docs/EVALUATION.md",
+    "docs/GUARDRAILS.md",
+    "docs/OBSERVABILITY.md",
+    "docs/OPERATIONS.md",
+    "docs/QUALITY_SCORE.md",
+    "docs/RELIABILITY.md",
+    "docs/RUNTIME.md",
+    "docs/SECURITY.md",
+}
 TOP_LEVEL_PATHS = {
     "AGENTS.md",
     "ARCHITECTURE.md",
@@ -62,6 +84,15 @@ class Finding:
     recommendation: str
 
 
+@dataclass
+class PlaceholderInventoryItem:
+    kind: str
+    key: str
+    path: str
+    line: int
+    text: str
+
+
 def utc_stamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
@@ -82,6 +113,23 @@ def read_text(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
+def strip_markdown_code(text: str) -> str:
+    without_fences = re.sub(r"```.*?```", "", text, flags=re.DOTALL)
+    return re.sub(r"`[^`]*`", "", without_fences)
+
+
+def strip_fenced_markdown_code_lines(text: str) -> list[tuple[int, str]]:
+    lines: list[tuple[int, str]] = []
+    in_fence = False
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if not in_fence:
+            lines.append((line_number, line))
+    return lines
+
+
 def stable_id(prefix: str, value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     slug = slug[:70].strip("-") or "finding"
@@ -96,6 +144,35 @@ def markdown_files() -> list[Path]:
         elif root.exists():
             paths.update(path for path in root.rglob("*.md") if path.is_file())
     return sorted(paths)
+
+
+def inventory_files() -> list[Path]:
+    paths: set[Path] = set()
+    paths.update(path for path in ROOT.glob("*.md") if path.is_file())
+    for root in (ROOT / "docs", ROOT / "runtime" / "tasks", ROOT / "evals" / "benchmarks"):
+        if root.exists():
+            paths.update(path for path in root.rglob("*") if path.suffix.lower() in {".md", ".json"})
+    return sorted(paths)
+
+
+def collect_placeholder_inventory(paths: list[Path]) -> list[PlaceholderInventoryItem]:
+    inventory: list[PlaceholderInventoryItem] = []
+    pattern = re.compile(r"\b(PROJECT_PLACEHOLDER|FRAMEWORK_TODO)\(([a-z0-9][a-z0-9-]*)\)")
+    for path in paths:
+        if "docs/exec-plans/completed" in relative(path):
+            continue
+        for line_number, line in strip_fenced_markdown_code_lines(read_text(path)):
+            for match in pattern.finditer(line):
+                inventory.append(
+                    PlaceholderInventoryItem(
+                        kind=match.group(1),
+                        key=match.group(2),
+                        path=relative(path),
+                        line=line_number,
+                        text=line.strip(),
+                    )
+                )
+    return sorted(inventory, key=lambda item: (item.kind, item.path, item.line, item.key))
 
 
 def add_finding(
@@ -175,8 +252,10 @@ def collect_structure_findings(findings: list[Finding]) -> None:
 
 
 def placeholder_summary(text: str) -> tuple[int, list[str]]:
+    text = strip_markdown_code(text)
     patterns = [
         r"\bTODO\b",
+        r"\bTBD\b",
         r"Status:\s*placeholder",
         r"Status:\s*project-specific placeholder",
         r"\bFill later\b",
@@ -205,7 +284,38 @@ def collect_placeholder_findings(findings: list[Finding], docs: list[Path]) -> N
                 detail="; ".join(matches),
                 paths=[path],
                 control="Documentation placeholder scan",
-                recommendation="Resolve concrete harness placeholders now; keep only product-specific placeholders that cannot be known yet.",
+                recommendation="Resolve concrete harness placeholders now; use PROJECT_PLACEHOLDER(...) only for target-project facts that cannot be known yet.",
+            )
+
+
+def normalize_status(value: str) -> str:
+    return value.strip().rstrip(".").strip().lower()
+
+
+def collect_status_findings(findings: list[Finding], docs: list[Path]) -> None:
+    for path in docs:
+        text = strip_markdown_code(read_text(path))
+        invalid: list[str] = []
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            match = re.match(r"^Status:\s*(.+?)\s*$", line)
+            if not match:
+                continue
+            status = normalize_status(match.group(1))
+            if status not in ALLOWED_STATUS_VALUES:
+                invalid.append(f"line {line_number}: {match.group(1).strip()}")
+
+        if invalid:
+            severity = "medium" if relative(path) in CORE_STATUS_DOCS else "low"
+            add_finding(
+                findings,
+                severity=severity,
+                dimension="knowledge system",
+                category="doc-status",
+                title=f"Non-standard status value in {relative(path)}",
+                detail="; ".join(invalid),
+                paths=[path],
+                control="Documentation status vocabulary scan",
+                recommendation="Use the controlled Status vocabulary in docs/product-specs/language-conventions.md.",
             )
 
 
@@ -316,7 +426,7 @@ def collect_reference_findings(findings: list[Finding], docs: list[Path]) -> Non
             detail=f"{len(paths)} document(s) reference {target}, but the path was not found.",
             paths=sorted(set(paths)),
             control="Markdown and code-span local reference scan",
-            recommendation="Create the referenced file, correct the path, or mark it clearly as a future placeholder.",
+            recommendation="Create the referenced file, correct the path, or use PROJECT_PLACEHOLDER(...) for target-project references that cannot exist yet.",
         )
 
 
@@ -555,6 +665,7 @@ def collect_findings(stale_days: int) -> list[Finding]:
     docs = markdown_files()
     collect_structure_findings(findings)
     collect_placeholder_findings(findings, docs)
+    collect_status_findings(findings, docs)
     collect_duplicate_heading_findings(findings, docs)
     collect_reference_findings(findings, docs)
     collect_tool_doc_findings(findings, docs)
@@ -581,7 +692,20 @@ def score_dimensions(findings: list[Finding]) -> dict[str, int]:
     return {dimension: max(0, value - penalties[dimension]) for dimension, value in dimensions.items()}
 
 
-def build_report(findings: list[Finding]) -> dict[str, Any]:
+def placeholder_inventory_summary(inventory: list[PlaceholderInventoryItem]) -> dict[str, Any]:
+    by_kind: dict[str, int] = {}
+    by_path: dict[str, int] = {}
+    for item in inventory:
+        by_kind[item.kind] = by_kind.get(item.kind, 0) + 1
+        by_path[item.path] = by_path.get(item.path, 0) + 1
+    return {
+        "total": len(inventory),
+        "by_kind": dict(sorted(by_kind.items())),
+        "by_path": dict(sorted(by_path.items())),
+    }
+
+
+def build_report(findings: list[Finding], placeholder_inventory: list[PlaceholderInventoryItem]) -> dict[str, Any]:
     scores = score_dimensions(findings)
     overall = round(sum(scores.values()) / len(scores))
     counts = {severity: 0 for severity in SEVERITY_ORDER}
@@ -595,6 +719,10 @@ def build_report(findings: list[Finding]) -> dict[str, Any]:
         "counts": counts,
         "quality_score": {"overall": overall, **scores},
         "findings": [asdict(finding) for finding in findings],
+        "placeholder_inventory": {
+            "summary": placeholder_inventory_summary(placeholder_inventory),
+            "items": [asdict(item) for item in placeholder_inventory],
+        },
     }
 
 
@@ -632,6 +760,22 @@ def markdown_report(report: dict[str, Any]) -> str:
                 "",
             ]
         )
+    inventory = report.get("placeholder_inventory", {})
+    summary = inventory.get("summary", {})
+    items = inventory.get("items", [])
+    lines.extend(["", "## Intentional Placeholder Inventory", ""])
+    lines.append(
+        "These entries are valid scaffold markers. They are recorded for adoption planning and do not affect score, report status, or queued cleanup tasks."
+    )
+    lines.extend(["", f"- Total: `{summary.get('total', 0)}`"])
+    by_kind = summary.get("by_kind", {})
+    if by_kind:
+        for kind, count in by_kind.items():
+            lines.append(f"- {kind}: `{count}`")
+    if items:
+        lines.extend(["", "### Locations", ""])
+        for item in items:
+            lines.append(f"- `{item['kind']}({item['key']})` in `{item['path']}:{item['line']}`")
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -645,8 +789,7 @@ def task_from_finding(finding: dict[str, Any], report_path: Path) -> dict[str, A
         f"Paths: {', '.join(finding['paths']) or 'repo'}\n"
         f"Recommendation: {finding['recommendation']}\n\n"
         "Make the smallest repo-legible change that resolves the finding. "
-        "Preserve product-specific placeholders when the framework cannot know the answer yet, "
-        "but mark them clearly as intentional."
+        "Preserve product-specific placeholders as PROJECT_PLACEHOLDER(...) when the framework cannot know the answer yet."
     )
     return {
         "id": task_id,
@@ -696,7 +839,7 @@ def update_quality_score(report: dict[str, Any], report_path: Path) -> None:
     lines = [
         "# Quality Score",
         "",
-        "Status: generated by entropy control.",
+        "Status: generated.",
         "",
         "Use this document to track recurring quality signals for the harness and the project it supports.",
         "",
@@ -712,7 +855,7 @@ def update_quality_score(report: dict[str, Any], report_path: Path) -> None:
         "",
         "## Scoring Notes",
         "",
-        f"Last updated from `{relative(report_path)}`.",
+        f"Last updated from entropy report `{report['id']}`.",
         "Scores start at 100 per dimension and subtract deterministic entropy penalties.",
         "",
         "## Open Quality Debt",
@@ -724,6 +867,25 @@ def update_quality_score(report: dict[str, Any], report_path: Path) -> None:
         for finding in debt:
             paths = ", ".join(f"`{path}`" for path in finding["paths"]) or "`repo`"
             lines.append(f"- {finding['severity']}: {finding['title']} ({paths})")
+    inventory = report.get("placeholder_inventory", {})
+    summary = inventory.get("summary", {})
+    lines.extend(
+        [
+            "",
+            "## Intentional Placeholder Inventory",
+            "",
+            "Valid placeholders are recorded for framework adoption planning. They do not affect score or queued cleanup tasks.",
+            "",
+            f"- Total: {summary.get('total', 0)}",
+        ]
+    )
+    for kind, count in summary.get("by_kind", {}).items():
+        lines.append(f"- {kind}: {count}")
+    by_path = summary.get("by_path", {})
+    if by_path:
+        lines.extend(["", "Tracked files:"])
+        for path, count in by_path.items():
+            lines.append(f"- `{path}`: {count}")
     QUALITY_SCORE_PATH.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
 
 
@@ -764,7 +926,8 @@ def main(argv: list[str] | None = None) -> int:
         args.report = True
 
     findings = collect_findings(stale_days=args.stale_days)
-    report = build_report(findings)
+    placeholder_inventory = collect_placeholder_inventory(inventory_files())
+    report = build_report(findings, placeholder_inventory)
     json_path, md_path = write_report(report)
     copy_latest(json_path)
 

@@ -7,7 +7,7 @@ The maintenance planner turns entropy control reports into narrow cleanup work.
 - Read `AGENTS.md`, `docs/RUNTIME.md`, `docs/GUARDRAILS.md`, `docs/OPERATIONS.md`, and the latest entropy report.
 - Separate deterministic findings from findings that need human judgment.
 - Prefer queued tasks for high-signal repairs over broad cleanup requests.
-- Preserve product-specific placeholders when the generic framework cannot know the answer yet.
+- Preserve product-specific placeholders as `PROJECT_PLACEHOLDER(...)` when the generic framework cannot know the answer yet.
 - Do not edit product files or delete artifacts directly.
 - Escalate to humans for destructive cleanup, credentials, production changes, ambiguous policy, or changes outside the harness permission model.
 

@@ -36,4 +36,4 @@ Results:
 - Structural validation passed.
 - Smoke evals passed.
 - Entropy high-severity gate passed.
-- Final entropy report found remaining medium debt in known scaffold placeholders and future product-specific checker files.
+- Final entropy report found remaining medium debt in known scaffold placeholder entries and future product-specific checker files.

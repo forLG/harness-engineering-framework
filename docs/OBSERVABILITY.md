@@ -11,22 +11,22 @@ validation/review output worth preserving outside the run directory.
 
 - Location: `artifacts/logs/`
 - Current use: reserved.
-- Format: project-specific.
+- Format: `PROJECT_PLACEHOLDER(log-format): define log format, naming, and minimum fields for the target project.`
 - Retention: keep logs that explain a decision, regression, or human escalation.
 
 ## Traces
 
 - Location: `artifacts/traces/`
 - Current use: reserved.
-- Format: project-specific.
+- Format: `PROJECT_PLACEHOLDER(trace-format): define trace format, timeline schema, and correlation identifiers for the target project.`
 - Retention: keep traces that explain behavior across agent steps, tools, services, or UI flows.
 
 ## Screenshots and UI Artifacts
 
 - Location: `artifacts/screenshots/`
 - Current use: reserved.
-- Browser tooling: project-specific.
-- Required viewports: project-specific.
+- Browser tooling: `PROJECT_PLACEHOLDER(browser-tooling): define Playwright, browser, device, or screenshot tooling used by the target project.`
+- Required viewports: `PROJECT_PLACEHOLDER(required-viewports): define required desktop, tablet, mobile, and accessibility verification surfaces.`
 
 ## Review and Validation Evidence
 
@@ -39,6 +39,8 @@ validation/review output worth preserving outside the run directory.
 ## Local Reproducibility
 
 Document how to reproduce a task run, including environment setup, services, ports, seed data, and commands.
+
+- `PROJECT_PLACEHOLDER(local-reproduction): list the commands and setup data needed to replay a failed or important run in the target project.`
 
 ## Maintenance Artifacts
 

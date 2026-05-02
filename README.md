@@ -25,8 +25,28 @@ codex -C path/to/real-project
 ```
 
 4. Ask Codex to inspect the repository before filling placeholders.
-5. Fill only facts grounded in the repository. Leave clear TODOs for unknowns.
+5. Fill only facts grounded in the repository. Keep `PROJECT_PLACEHOLDER(...)` entries for unknowns.
 6. Run the structural validator and the project's normal checks.
+
+## Placeholder Convention
+
+The canonical rule is `docs/product-specs/language-conventions.md`. In short, this framework is intentionally generic. Anything that depends on the target repository uses this format:
+
+```text
+PROJECT_PLACEHOLDER(<key>): <what the adopter must discover and fill>
+```
+
+Use `PROJECT_PLACEHOLDER(...)` only for project-specific facts that the universal scaffold cannot know, such as source layers, build commands, service ports, secret handling, deployment rules, UI verification, product eval tasks, and ownership boundaries.
+
+Known framework work that is not target-project-specific uses this separate format:
+
+```text
+FRAMEWORK_TODO(<key>): <framework improvement still needed>
+```
+
+When applying the scaffold, replace project placeholders with repository-grounded facts. If the fact cannot be discovered, leave the placeholder in place and make the missing input precise.
+
+Entropy control records valid `PROJECT_PLACEHOLDER(...)` and `FRAMEWORK_TODO(...)` entries as an intentional placeholder inventory in its reports and summarizes them in `docs/QUALITY_SCORE.md`; they do not affect score or queued cleanup tasks.
 
 ## Starter Prompt
 
@@ -49,7 +69,7 @@ Then fill the placeholder harness files with project-specific information:
 - Fill docs/RELIABILITY.md, docs/SECURITY.md, and docs/QUALITY_SCORE.md with project-specific standards.
 - Update PLANS.md with a realistic first milestone.
 
-Do not invent facts. If something cannot be discovered, leave a TODO with the exact missing information needed.
+Do not invent facts. If something cannot be discovered, leave `PROJECT_PLACEHOLDER(<key>): <exact missing information needed>`.
 
 After editing, run tools/validate_harness_structure.py and any existing project validation commands you can safely run.
 ```
@@ -218,7 +238,7 @@ List benchmark definitions:
 python tools/run_evals.py --list
 ```
 
-For product-specific phase-three evals, start from `evals/benchmarks/product-template/`. Copy the template into a concrete benchmark directory, fill the target project's facts, run it with `--no-baseline` while calibrating, then create a baseline with `--update-baseline` after a known-good pass.
+For product-specific phase-three evals, start from `evals/benchmarks/product-template/`. Copy the template into a concrete benchmark directory, replace `PROJECT_PLACEHOLDER(...)` values with the target project's facts, run it with `--no-baseline` while calibrating, then create a baseline with `--update-baseline` after a known-good pass.
 
 ## Validation
 

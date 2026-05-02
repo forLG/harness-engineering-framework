@@ -1,6 +1,6 @@
 # Runtime
 
-Status: initial Ralph loop scaffold.
+Status: scaffold.
 
 This harness uses Codex as the worker agent and a repository-local supervisor script as the outer loop. Codex handles implementation, validation, review, and follow-up planning. The supervisor chooses queued tasks, invokes role-specific agents, captures artifacts, moves task state, and queues follow-up work.
 
@@ -110,7 +110,7 @@ Smoke evals run in preview mode and do not invoke Codex. By default, suite resul
 - Follow-up: validator returns `failed` or reviewer returns `needs_followup`; the planner may create new queued tasks.
 - Blocked: any role returns `blocked`, Codex is unavailable, auto-commit preflight fails, or required human input is needed.
 - Retry: create a follow-up task instead of silently rerunning the same task.
-- Timeout: TODO, add subprocess timeout and task retry metadata after the first real run.
+- Timeout: `FRAMEWORK_TODO(timeout-policy): add subprocess timeout and task retry metadata after the first real run.`
 
 ## Open Decisions
 

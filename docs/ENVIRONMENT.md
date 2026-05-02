@@ -1,29 +1,29 @@
 # Environment
 
-Status: placeholder.
+Status: project-specific.
 
-Define project-specific local setup here when this framework is applied to a real harness project.
+Define project-specific local setup here when this framework is applied to a real repository. Replace each `PROJECT_PLACEHOLDER(...)` entry with facts discovered from the target project.
 
 ## Language Runtime
 
-Status: placeholder.
+- `PROJECT_PLACEHOLDER(language-runtime): list required language runtimes, versions, package managers, and version managers.`
 
 ## Dependency Installation
 
-Status: placeholder.
+- `PROJECT_PLACEHOLDER(dependency-install): list deterministic dependency installation commands and lockfiles.`
 
 ## Local Services
 
-Status: placeholder.
+- `PROJECT_PLACEHOLDER(local-services): list databases, queues, browsers, emulators, containers, or background services needed for local validation.`
 
 ## Ports
 
-Status: placeholder.
+- `PROJECT_PLACEHOLDER(ports): list local service ports, conflict policy, and any reserved ranges.`
 
 ## Environment Variables
 
-Status: placeholder.
+- `PROJECT_PLACEHOLDER(environment-variables): list required variables, safe defaults, secret handling, and redaction rules.`
 
 ## Reproducible Setup Command
 
-Status: placeholder.
+- `PROJECT_PLACEHOLDER(setup-command): provide the command or script that prepares a clean checkout for local validation.`

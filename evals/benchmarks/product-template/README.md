@@ -7,7 +7,7 @@ To create a product benchmark:
 1. Copy this directory to `evals/benchmarks/<benchmark-id>/`.
 2. Rename `benchmark.template.json` to `benchmark.json`.
 3. Rename `task.template.json` to `task.json`.
-4. Replace every `TODO` with facts from the target project.
+4. Replace every `PROJECT_PLACEHOLDER(...)` value with facts from the target project.
 5. Run the suite locally:
 
 ```bash

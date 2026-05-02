@@ -1,12 +1,12 @@
 {
-  "id": "TODO-product-benchmark-id",
+  "id": "PROJECT_PLACEHOLDER(product-benchmark-id)",
   "suite": "product-smoke",
   "mode": "preview",
-  "description": "TODO: Describe the product behavior or workflow this benchmark protects.",
+  "description": "PROJECT_PLACEHOLDER(product-benchmark-description): describe the product behavior or workflow this benchmark protects.",
   "task_file": "task.json",
   "harness_command": "{python} tools/harness_loop.py --once",
   "commands": [
-    "TODO: replace with safe project validation command"
+    "PROJECT_PLACEHOLDER(product-validation-command): replace with a safe project validation command."
   ],
   "required_artifacts": [
     "summary.json"
@@ -14,7 +14,7 @@
   "max_latency_seconds": 300,
   "regression_policy": "fail_on_status_regression",
   "model_config": {
-    "mode": "TODO: preview or execute",
-    "notes": "TODO: name model, approval, sandbox, and cost assumptions before execute-mode use."
+    "mode": "PROJECT_PLACEHOLDER(product-benchmark-mode): preview or execute.",
+    "notes": "PROJECT_PLACEHOLDER(product-model-config): name model, approval, sandbox, and cost assumptions before execute-mode use."
   }
 }

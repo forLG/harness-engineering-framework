@@ -1,6 +1,6 @@
 # Operations
 
-Status: initial scaffold.
+Status: scaffold.
 
 Define how the harness changes safely over time.
 

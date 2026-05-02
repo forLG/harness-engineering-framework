@@ -90,3 +90,6 @@ Acceptance criteria:
 - `docs/exec-plans/completed/baseline-regression.md`
 - `docs/exec-plans/completed/product-eval-template.md`
 - `docs/exec-plans/completed/entropy-control.md`
+- `docs/exec-plans/completed/placeholder-standardization.md`
+- `docs/exec-plans/completed/status-placeholder-language.md`
+- `docs/exec-plans/completed/intentional-placeholder-inventory.md`

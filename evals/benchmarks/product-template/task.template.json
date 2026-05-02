@@ -1,18 +1,18 @@
 {
-  "id": "TODO-product-task-id",
-  "title": "TODO: Product benchmark task title",
+  "id": "PROJECT_PLACEHOLDER(product-task-id)",
+  "title": "PROJECT_PLACEHOLDER(product-task-title): product benchmark task title.",
   "status": "queued",
   "parent": null,
   "priority": 100,
-  "created_at": "TODO: ISO-8601 timestamp",
-  "updated_at": "TODO: ISO-8601 timestamp",
-  "prompt": "TODO: Describe one narrow product-specific task grounded in the target repository.",
+  "created_at": "PROJECT_PLACEHOLDER(created-at): ISO-8601 timestamp.",
+  "updated_at": "PROJECT_PLACEHOLDER(updated-at): ISO-8601 timestamp.",
+  "prompt": "PROJECT_PLACEHOLDER(product-task-prompt): describe one narrow product-specific task grounded in the target repository.",
   "acceptance": [
-    "TODO: Observable product behavior or artifact changed as expected.",
-    "TODO: Relevant project validation command passes."
+    "PROJECT_PLACEHOLDER(product-acceptance-behavior): observable product behavior or artifact changed as expected.",
+    "PROJECT_PLACEHOLDER(product-acceptance-validation): relevant project validation command passes."
   ],
   "validation_commands": [
-    "TODO: replace with safe project validation command"
+    "PROJECT_PLACEHOLDER(product-validation-command): replace with a safe project validation command."
   ],
   "commit_policy": "never",
   "run_ids": [],

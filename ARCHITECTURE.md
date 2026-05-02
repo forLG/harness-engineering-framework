@@ -1,22 +1,22 @@
 # Architecture
 
-This document defines the universal harness architecture. Fill project-specific choices when the framework is applied to a real repository.
+This document defines the universal harness architecture. Project-specific facts use `PROJECT_PLACEHOLDER(...)` until the framework is applied to a real repository.
 
 ## Runtime Core
 
-Status: placeholder.
+Status: implemented.
 
 The runtime should provide:
 
 - Task intake and normalization.
 - Tool execution with explicit permissions.
-- State persistence for task progress, decisions, and artifacts.
+- File-based state persistence for task progress, decisions, and artifacts.
 - Stop conditions, retry rules, and failure classification.
 - Isolated execution environments for local runs, tests, and UI verification.
 
 ## Extension Points
 
-Status: placeholder.
+Status: implemented.
 
 Expected extension points:
 
@@ -29,67 +29,67 @@ Expected extension points:
 
 ## State Model
 
-Status: placeholder.
+Status: implemented.
 
 Define where these records live:
 
-- Task request.
-- Plan and progress.
-- Tool calls and outputs.
-- Artifacts.
-- Eval results.
-- Human approvals and escalation history.
+- Task request: `runtime/tasks/queue/*.json`.
+- Plan and progress: `docs/exec-plans/active/`, task status directories under `runtime/tasks/`, and `artifacts/runs/<run-id>/summary.json`.
+- Tool calls and outputs: role outputs under `artifacts/runs/<run-id>/`.
+- Artifacts: `artifacts/`.
+- Eval results: `evals/results/`.
+- Human approvals and escalation history: task status, role JSON output, and preserved run artifacts.
 
 ## Isolation Model
 
-Status: placeholder.
+Status: scaffold.
 
 Define how the harness separates:
 
-- Worktrees or task branches.
-- Local services and ports.
-- Credentials and secrets.
-- Runtime artifacts.
-- Production or external systems.
+- Worktrees or task branches: current scaffold runs in the active repository; target projects may add task branches or worktrees.
+- Local services and ports: `PROJECT_PLACEHOLDER(local-services): document services, ports, and startup order for the target project.`
+- Credentials and secrets: `PROJECT_PLACEHOLDER(credentials): document secret sources, redaction rules, and escalation boundaries for the target project.`
+- Runtime artifacts: stored under `artifacts/`.
+- Production or external systems: `PROJECT_PLACEHOLDER(external-systems): document production, staging, and external mutation boundaries for the target project.`
 
 ## Dependency Boundaries
 
-Status: project-specific placeholder.
+Status: project-specific.
 
 Fill this section when applying the framework to a real repository. Do not invent product boundaries in the generic scaffold.
 
 Record intended dependency direction before encoding it mechanically.
 
-Boundary placeholders:
+Fill these placeholders:
 
-- `TODO: identify source layers or packages, such as ui, api, domain, infrastructure, generated, or tests.`
-- `TODO: list allowed imports between layers or packages.`
-- `TODO: list forbidden imports between layers or packages.`
-- `TODO: identify generated files and whether agents may edit them directly.`
-- `TODO: identify migration, schema, or contract files that require special validation.`
+- `PROJECT_PLACEHOLDER(source-layers): identify source layers or packages, such as ui, api, domain, infrastructure, generated, or tests.`
+- `PROJECT_PLACEHOLDER(allowed-imports): list allowed imports between layers or packages.`
+- `PROJECT_PLACEHOLDER(forbidden-imports): list forbidden imports between layers or packages.`
+- `PROJECT_PLACEHOLDER(generated-files): identify generated files and whether agents may edit them directly.`
+- `PROJECT_PLACEHOLDER(contract-files): identify migration, schema, or contract files that require special validation.`
 
-Mechanical check placeholder:
+Mechanical check:
 
-- `TODO: encode dependency boundaries in tools/check_dependency_boundaries.py, an existing linter config, or CI.`
+- `PROJECT_PLACEHOLDER(dependency-boundary-check): encode dependency boundaries in a repository-local checker, existing linter config, or CI.`
 
 ## Product-Specific Architecture Rules
 
-Status: project-specific placeholder.
+Status: project-specific.
 
 Use this section only after the framework is applied to a real product repository.
 
 Rules to discover and fill:
 
-- `TODO: source-of-truth files for product behavior, contracts, schemas, and generated artifacts.`
-- `TODO: ownership boundaries for product modules or services.`
-- `TODO: runtime services, ports, databases, queues, and external systems.`
-- `TODO: build, test, lint, typecheck, migration, and UI verification commands required by changed paths.`
-- `TODO: deployment, production mutation, credential, and approval boundaries.`
+- `PROJECT_PLACEHOLDER(source-of-truth): source-of-truth files for product behavior, contracts, schemas, and generated artifacts.`
+- `PROJECT_PLACEHOLDER(ownership): ownership boundaries for product modules or services.`
+- `PROJECT_PLACEHOLDER(runtime-services): runtime services, ports, databases, queues, and external systems.`
+- `PROJECT_PLACEHOLDER(validation-matrix): build, test, lint, typecheck, migration, and UI verification commands required by changed paths.`
+- `PROJECT_PLACEHOLDER(approval-boundaries): deployment, production mutation, credential, and approval boundaries.`
 
 ## Open Decisions
 
-- Runtime language:
-- State backend:
-- Tool permission model:
-- Eval runner:
-- Observability backend:
+- Runtime language: Python supervisor scripts plus Codex CLI role invocations.
+- State backend: repository-local JSON, Markdown, and artifact files.
+- Tool permission model: Codex sandboxing plus role-level escalation rules.
+- Eval runner: `tools/run_evals.py`.
+- Observability backend: repository-local artifacts under `artifacts/`.

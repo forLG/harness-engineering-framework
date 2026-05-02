@@ -15,4 +15,4 @@ Source material or source pointers belong in `references/`. This file is the dis
 
 ## Project-Specific Notes
 
-Status: placeholder.
+- `PROJECT_PLACEHOLDER(harness-engineering-notes): record target-project decisions about how broad harness principles apply locally.`
