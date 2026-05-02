@@ -1,81 +1,74 @@
 # Harness Engineering Framework
 
-This repository is a universal scaffold for turning a real software project into an agent-legible harness engineering project.
+This repository is a universal starting point for building a Codex-based software engineering harness.
 
-The goal is not to store one large prompt. The goal is to create repository-native infrastructure that lets Codex or another agent understand the project, run tasks, validate work, preserve evidence, and improve safely over time.
+Harness engineering is the practice of designing the environment around an AI coding agent: repository knowledge, task queues, execution loops, validation checks, review roles, artifacts, and feedback systems. The goal is not to write one perfect prompt. The goal is to make a project legible enough that agents can repeatedly understand it, change it, validate their work, preserve evidence, and improve the system over time.
 
-## What This Framework Provides
+In a harnessed project, humans steer intent and judgment. Agents execute the work inside a structured loop.
 
-- A short agent entry point in `AGENTS.md`.
-- Architecture and planning documents at the repository root.
-- Focused docs for environment, runtime, observability, guardrails, evaluation, operations, reliability, security, and quality.
-- Placeholder directories for execution plans, raw references, distilled reference notes, generated docs, evals, runtime code, tools, and run artifacts.
-- A structural and guardrail validator in `tools/validate_harness_structure.py`, with task-specific checks in `tools/validate_guardrails.py`.
-- A smoke evaluation runner in `tools/run_evals.py`, with starter benchmark definitions under `evals/benchmarks/`.
-- An entropy control runner in `tools/entropy_control.py` for stale docs, overlap, bad harness code, queue health, artifacts, eval drift, and quality scoring.
-- A repo-local Codex skill in `.skills/apply-harness-framework/` that guides the scaffold adoption workflow.
+---
+
+## What This Framework Is
+
+This framework turns a normal repository into agent infrastructure.
+
+It provides a repo-local structure for:
+
+- Agent entry instructions in `AGENTS.md`.
+- Architecture and roadmap maps in `ARCHITECTURE.md` and `PLANS.md`.
+- Durable project knowledge under `docs/`.
+- Role prompts for implementer, validator, reviewer, and follow-up planner agents.
+- A file-based task loop under `runtime/tasks/`.
+- Run evidence under `artifacts/`.
+- Benchmark tasks and results under `evals/`.
+- Mechanical validators and maintenance tools under `tools/`.
+- A repo-local Codex skill, `.skills/apply-harness-framework/`, for applying the scaffold to real projects.
+
+The framework is intentionally generic. Project-specific facts are represented as `PROJECT_PLACEHOLDER(...)` until Codex or a human can replace them with evidence from a real repository.
+
+---
+
+## What It Can Do
+
+The scaffold currently supports:
+
+- Project orientation through concise maps and focused docs.
+- A Ralph-style outer task loop driven by `tools/harness_loop.py`.
+- Task state transitions across `queue`, `active`, `completed`, and `blocked`.
+- Role-based Codex runs for implementation, validation, review, and follow-up planning.
+- Local run artifacts with prompts, outputs, and summaries.
+- Optional local auto-commit after successful validation and review.
+- Structural validation through `tools/validate_harness_structure.py`.
+- Guardrail checks through `tools/validate_guardrails.py`.
+- Smoke evaluations through `tools/run_evals.py`.
+- Entropy control through `tools/entropy_control.py` for stale docs, broken links, queue health, artifact hygiene, eval drift, and quality scoring.
+
+This is not meant to replace human engineering judgment. It is meant to move that judgment into reusable structure: docs, checks, plans, tasks, evals, and review loops.
+
+---
 
 ## Apply It To A Real Project
 
-The recommended adoption model is phase-by-phase, guided by the repo-local skill in `.skills/apply-harness-framework/`.
+The most important use case is applying this scaffold to an existing software project.
 
-Do not ask Codex to fill every placeholder from one giant prompt and then trust the result. A single prompt is useful as an entry point, but the actual work should inspect the target repository, fill facts from evidence, preserve unknowns as explicit placeholders, and validate after each meaningful phase.
+Recommended workflow:
 
-### The Three Adoption Options
+1. Copy this framework into the target repository root.
+2. Start Codex from the target repository.
+3. Ask Codex to use `.skills/apply-harness-framework/SKILL.md`.
+4. Let Codex inspect the project before editing.
+5. Fill the harness phase by phase.
+6. Keep unknown project facts as precise `PROJECT_PLACEHOLDER(...)` entries.
+7. Run harness validation after each meaningful change.
+8. Add project-specific validation commands only when they are discovered from the repository.
 
-There are three practical ways to use this scaffold:
-
-1. Manual phase filling.
-   This is safest when the project is sensitive or poorly documented. A human fills each document after inspecting the repository. It is accurate but slow.
-
-2. A single start prompt.
-   This is fastest for demos and prototypes. It can produce a useful first draft, but it is more likely to invent commands, architecture, owners, or policies.
-
-3. Skill-guided phased adoption.
-   This is the recommended path. The `.skills/apply-harness-framework/` skill gives Codex the workflow, fill order, evidence rules, validation steps, and reporting format. Codex still works phase by phase, but the process is repeatable and easier for new users.
-
-In short: use a start prompt to launch the work, use the skill to guide the process, and use phases to keep the result trustworthy.
-
-### Copy The Framework
-
-Copy this framework into the root of the target project. The target project should then contain the top-level files and directories from this scaffold, including:
-
-- `AGENTS.md`
-- `ARCHITECTURE.md`
-- `PLANS.md`
-- `README.md`
-- `docs/`
-- `runtime/`
-- `tools/`
-- `evals/`
-- `artifacts/`
-- `.skills/`
-
-If the target project already has files with the same names, merge carefully instead of overwriting project-specific information. Keep the target project's existing setup, architecture, and operations docs as evidence.
-
-### Start Codex In The Target Project
-
-Run Codex from the target repository root:
+Start Codex in the target project:
 
 ```bash
 codex -C path/to/real-project
 ```
 
-If your Codex environment discovers repo-local skills, invoke the skill directly:
-
-```text
-Use $apply-harness-framework to apply this scaffold to the current repository.
-```
-
-If repo-local skills are not auto-discovered, point Codex at the skill file:
-
-```text
-Read .skills/apply-harness-framework/SKILL.md and follow it to apply this harness framework to the current repository.
-```
-
-### Recommended Start Prompt
-
-Use this as the first message after copying the scaffold:
+Then use this prompt:
 
 ```text
 Apply the harness engineering framework in this repository to the current project.
@@ -93,42 +86,66 @@ Keep AGENTS.md concise. Put durable detail in focused docs.
 After each phase, run python tools/validate_harness_structure.py and any safe target-project validation command discovered from the repository.
 ```
 
-### Adoption Phases
+If repo-local skills are available in your Codex environment, you can also say:
 
-Phase 1 creates basic repository orientation:
+```text
+Use $apply-harness-framework to apply this scaffold to the current repository.
+```
 
-- Fill `docs/ENVIRONMENT.md`.
-- Fill `ARCHITECTURE.md`.
-- Keep `AGENTS.md` short and project-specific.
-- Outcome: a new agent can understand the repository shape and run at least one safe validation command.
+---
 
-Phase 2 defines how agent work runs and leaves evidence:
+## Adoption Phases
 
-- Fill `docs/RUNTIME.md`.
-- Fill `docs/OBSERVABILITY.md`.
-- Fill `docs/RELIABILITY.md`.
-- Outcome: tasks, runs, failures, logs, traces, screenshots, and validation evidence have clear homes.
+Use phases instead of asking an agent to fill everything in one giant pass.
 
-Phase 3 turns expectations into safety and measurement:
+### Phase 1: Repository Orientation
 
-- Fill `docs/GUARDRAILS.md`.
-- Fill `docs/SECURITY.md`.
-- Fill `docs/EVALUATION.md`.
-- Fill `docs/QUALITY_SCORE.md`.
-- Outcome: project rules start becoming checks, benchmark tasks, and quality signals.
+Fill:
 
-Phase 4 makes the harness maintainable:
+- `docs/ENVIRONMENT.md`
+- `ARCHITECTURE.md`
+- `AGENTS.md`
 
-- Fill `docs/OPERATIONS.md`.
-- Replace the applied-project section in `PLANS.md`.
-- Add active execution plans under `docs/exec-plans/active/` when work is substantial.
-- Outcome: the project has a repeatable planning, review, cleanup, and maintenance loop.
+Outcome: a new agent can understand the repository shape, setup path, and at least one safe validation command.
 
-### What Codex Should Inspect
+### Phase 2: Runtime And Evidence
 
-Before editing placeholders, Codex should inspect high-value repository evidence:
+Fill:
 
-- File structure from `rg --files`.
+- `docs/RUNTIME.md`
+- `docs/OBSERVABILITY.md`
+- `docs/RELIABILITY.md`
+
+Outcome: tasks, runs, failures, logs, traces, screenshots, and validation evidence have clear homes.
+
+### Phase 3: Guardrails And Measurement
+
+Fill:
+
+- `docs/GUARDRAILS.md`
+- `docs/SECURITY.md`
+- `docs/EVALUATION.md`
+- `docs/QUALITY_SCORE.md`
+
+Outcome: important project rules begin turning into checks, benchmark tasks, and quality signals.
+
+### Phase 4: Operations And Maintenance
+
+Fill:
+
+- `docs/OPERATIONS.md`
+- `PLANS.md`
+- Active execution plans under `docs/exec-plans/active/` when work is substantial.
+
+Outcome: the project has a repeatable planning, review, cleanup, and maintenance loop.
+
+---
+
+## What Codex Should Inspect
+
+Before replacing placeholders, Codex should inspect evidence such as:
+
+- Repository layout from `rg --files`.
 - Package manifests and lockfiles.
 - Build, test, lint, typecheck, and dev-server scripts.
 - CI workflows and deployment configuration.
@@ -138,206 +155,135 @@ Before editing placeholders, Codex should inspect high-value repository evidence
 - Test directories, fixtures, benchmark tasks, and eval files.
 - Existing agent instructions such as `AGENTS.md`, `.codex/`, or `.github/`.
 
-### What Codex Should Not Invent
+If the repository does not answer a question, leave a placeholder. Accurate uncertainty is better than invented certainty.
 
-Leave a `PROJECT_PLACEHOLDER(...)` when the repository does not answer the question. This is better than confident fiction.
+---
 
-Common facts that must be evidence-backed:
+## How Humans Interact With The Framework
 
-- Runtime versions.
-- Dependency installation commands.
-- Build, test, lint, and typecheck commands.
-- Local services and ports.
-- Environment variables and secret handling.
-- Source layers and dependency boundaries.
-- Generated files and contract files.
-- Deployment process and approval rules.
-- Product-specific security restrictions.
-- Evaluation acceptance criteria.
+Humans interact with the harness at three levels.
 
-### Validation During Adoption
+### 1. Interactive Steering
 
-Run the harness validator after changing framework layout or task state:
-
-```bash
-python tools/validate_harness_structure.py
-```
-
-Run entropy control when you want an adoption progress report:
-
-```bash
-python tools/entropy_control.py --report
-```
-
-Run smoke evals after changing runtime, task, or eval behavior:
-
-```bash
-python tools/run_evals.py --suite smoke
-```
-
-When applied to a real project, also run the project's own safe validation commands, such as tests, type checks, lint checks, builds, and UI verification.
-
-## Placeholder Convention
-
-The canonical rule is `docs/product-specs/language-conventions.md`. In short, this framework is intentionally generic. Anything that depends on the target repository uses this format:
-
-```text
-PROJECT_PLACEHOLDER(<key>): <what the adopter must discover and fill>
-```
-
-Use `PROJECT_PLACEHOLDER(...)` only for project-specific facts that the universal scaffold cannot know, such as source layers, build commands, service ports, secret handling, deployment rules, UI verification, product eval tasks, and ownership boundaries.
-
-Known framework work that is not target-project-specific uses this separate format:
-
-```text
-FRAMEWORK_TODO(<key>): <framework improvement still needed>
-```
-
-When applying the scaffold, replace project placeholders with repository-grounded facts. If the fact cannot be discovered, leave the placeholder in place and make the missing input precise.
-
-Entropy control records valid `PROJECT_PLACEHOLDER(...)` and `FRAMEWORK_TODO(...)` entries as an intentional placeholder inventory in its reports and summarizes them in `docs/QUALITY_SCORE.md`; they do not affect score or queued cleanup tasks.
-
-## Interactive And Automated Runs
-
-Use interactive Codex for human-supervised work:
+Use interactive Codex when a human wants to supervise decisions closely:
 
 ```bash
 codex -C path/to/real-project
 ```
 
-Use non-interactive Codex for automation, CI, scheduled cleanup, or benchmark tasks:
+This mode is best for applying the framework, refining docs, reviewing architecture, and handling ambiguous project decisions.
 
-```bash
-codex exec --full-auto -C path/to/real-project "Implement the active plan in docs/exec-plans/active/<plan>.md"
-```
+### 2. Task Loop Supervision
 
-Use JSON output when a harness runner needs to capture events:
-
-```bash
-codex exec --full-auto --json -C path/to/real-project "Run the harness evaluation plan"
-```
-
-Current supervisor runs write role prompts, role outputs, and summaries under `artifacts/runs/`.
-The other artifact directories are reserved buckets for task-specific evidence and may be empty
-until a project needs them:
-
-- `artifacts/logs/`
-- `artifacts/traces/`
-- `artifacts/screenshots/`
-- `artifacts/maintenance/`
-- `evals/results/`
-
-## References
-
-Use `references/` for external or raw long-lived source material that agents should consult, such as copied source excerpts, vendor documentation snapshots, API specs, or source pointers.
-
-Use `docs/references/` for project-local interpretation of those sources: distilled principles, decisions, and notes about how the material applies to this harness.
-
-## Ralph-Style Task Loop
-
-This scaffold includes a minimal outer loop supervisor:
+Preview the next queued task without invoking Codex:
 
 ```bash
 python tools/harness_loop.py --once
 ```
 
-Preview mode writes the implementer, validator, and reviewer prompts into `artifacts/runs/` without invoking Codex. To execute one queued task:
+Run one queued task through the implementer, validator, and reviewer roles:
 
 ```bash
 python tools/harness_loop.py --once --execute
 ```
 
-Execute mode invokes role agents with `codex exec --full-auto -C <repo> ...`. This keeps non-interactive runs from stalling on routine permission prompts while preserving Codex sandboxing.
-
-Queued tasks live in `runtime/tasks/queue/` as JSON files. The supervisor moves tasks through `active`, `completed`, and `blocked`, saves role outputs in `artifacts/runs/`, and can create follow-up queued tasks when validation or review finds unfinished work.
-
-To let the loop create a local commit after a successful validated run:
+Run until the queue is empty or a limit is reached:
 
 ```bash
-python tools/harness_loop.py --once --execute --auto-commit
+python tools/harness_loop.py --until-empty --execute --max-tasks 5
 ```
 
-Auto-commit requires a clean Git worktree before the task starts, commits only after validator and reviewer approval, and never pushes.
-Automatic commit messages use functional prefixes such as `docs:`, `feat:`, `fix:`, `test:`, or `chore:`. Tasks can set a full `commit_message` or a `commit_type` for generated messages.
+The supervisor writes run evidence under `artifacts/runs/`.
 
-## Entropy Control
+### 3. Review, Escalation, And Maintenance
 
-Run a deterministic entropy report when the harness starts to drift:
+Humans review:
 
-```bash
-python tools/entropy_control.py --report
-```
+- Run summaries in `artifacts/runs/<run-id>/summary.json`.
+- Role outputs in the same run directory.
+- Follow-up tasks created under `runtime/tasks/queue/`.
+- Blocked tasks under `runtime/tasks/blocked/`.
+- Maintenance reports under `artifacts/maintenance/`.
 
-The report checks documentation placeholders and overlap, broken local references, undocumented tools, Python compile health for harness tools, task queue health, run artifact summaries, eval baselines, and quality score inputs. It writes JSON and Markdown artifacts under `artifacts/maintenance/`.
+The harness should escalate to a human for credentials, production changes, destructive actions, ambiguous policy decisions, and anything outside the repository permission model.
 
-To turn high- and medium-severity findings into normal queued tasks:
+---
 
-```bash
-python tools/entropy_control.py --report --queue-tasks
-```
+## Core Commands
 
-To refresh `docs/QUALITY_SCORE.md` from the latest report:
-
-```bash
-python tools/entropy_control.py --report --update-quality-score
-```
-
-Entropy control is intentionally run as a standalone maintenance command rather than as part of the outer task loop.
-
-## From Documentation To Harness
-
-The first version of a harness is usually documentation plus a few checks. A mature harness converts recurring expectations into mechanical enforcement.
-
-Good next steps after filling placeholders:
-
-- Add a real runner script that wraps `codex exec`.
-- Add mechanical checks for required docs, directories, and task schema rules.
-- Add project-specific lint rules for architecture boundaries.
-- Add benchmark tasks under `evals/benchmarks/`.
-- Capture eval results under `evals/results/`.
-- Add cleanup checks for stale docs, dead plans, and drift from architecture.
-
-## Evaluation Loop
-
-Run deterministic smoke evals before merging harness changes:
-
-```bash
-python tools/run_evals.py --suite smoke
-```
-
-The smoke suite stages benchmark tasks into `runtime/tasks/queue/`, runs the harness in preview mode, checks required artifacts, runs local validators, and writes a result file under `evals/results/`. The runner exits nonzero on failed benchmarks so regressions are visible in local checks or CI.
-
-Smoke runs compare against `evals/baselines/smoke.json` by default. Refresh that baseline after an intentional known-good behavior change:
-
-```bash
-python tools/run_evals.py --suite smoke --update-baseline
-```
-
-List benchmark definitions:
-
-```bash
-python tools/run_evals.py --list
-```
-
-For product-specific phase-three evals, start from `evals/benchmarks/product-template/`. Copy the template into a concrete benchmark directory, replace `PROJECT_PLACEHOLDER(...)` values with the target project's facts, run it with `--no-baseline` while calibrating, then create a baseline with `--update-baseline` after a known-good pass.
-
-## Validation
-
-Run the scaffold validator after changing the framework layout or task state:
+Validate the framework structure:
 
 ```bash
 python tools/validate_harness_structure.py
 ```
 
-When applied to a real project, also run the project's normal validation commands, such as tests, type checks, lint checks, build checks, and UI verification.
+Run a deterministic entropy report:
 
-## Operating Principles
+```bash
+python tools/entropy_control.py --report
+```
 
-- Treat repository-local artifacts as the system of record.
-- Keep top-level entry points short.
-- Use progressive disclosure: link from maps to focused docs.
-- Prefer boring, inspectable technology.
-- Preserve logs, traces, screenshots, and eval results when they explain decisions.
-- Convert important rules into checks instead of relying on memory.
-- Separate framework concerns from product-specific workflow.
-- Plan increasing autonomy in stages.
+Queue cleanup tasks from entropy findings:
+
+```bash
+python tools/entropy_control.py --report --queue-tasks
+```
+
+Run smoke evals:
+
+```bash
+python tools/run_evals.py --suite smoke
+```
+
+Preview one task loop:
+
+```bash
+python tools/harness_loop.py --once
+```
+
+Execute one task loop:
+
+```bash
+python tools/harness_loop.py --once --execute
+```
+
+---
+
+## Repository Map
+
+- `AGENTS.md`: short agent entry point and repository map.
+- `ARCHITECTURE.md`: runtime boundaries, extension points, state model, isolation model, and project-specific architecture placeholders.
+- `PLANS.md`: framework roadmap and applied-project planning template.
+- `docs/RUNTIME.md`: invocation modes, task loop, role outputs, state, artifacts, and stop conditions.
+- `docs/`: durable project knowledge and focused harness docs.
+- `docs/agent-roles/`: role prompts and output contracts.
+- `docs/exec-plans/`: active and completed execution plans.
+- `.skills/apply-harness-framework/`: Codex skill for adapting this scaffold to a target project.
+- `runtime/tasks/`: file-based task queue and task state.
+- `tools/`: validators, supervisor loop, eval runner, and maintenance utilities.
+- `evals/`: benchmark definitions, baselines, and results.
+- `artifacts/`: run outputs, logs, traces, screenshots, validation evidence, and maintenance reports.
+- `references/`: external or raw long-lived source material.
+
+---
+
+## Generated By Codex
+
+This framework is totally generated by Codex agent.
+
+The intended human role is to define goals, review outcomes, make judgment calls, and decide which constraints should become durable repository structure. The intended agent role is to write the files, update the harness, run checks, preserve evidence, and keep improving the loop.
+
+---
+
+## References
+
+- OpenAI, [Harness engineering: leveraging Codex in an agent-first world](https://openai.com/index/harness-engineering/).
+- OpenAI, [Unlocking the Codex harness: how we built the App Server](https://openai.com/index/unlocking-the-codex-harness/).
+- snarktank, [ralph](https://github.com/snarktank/ralph).
+- deusyu, [harness-engineering](https://github.com/deusyu/harness-engineering).
+
+---
+
+## Operating Principle
+
+Keep the agent entry point short. Put durable knowledge in focused docs. Convert repeated rules into checks. Preserve evidence when it explains a decision. Let humans spend attention on intent and judgment, while agents do the repeatable work inside a visible, validated loop.
