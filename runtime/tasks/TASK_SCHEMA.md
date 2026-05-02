@@ -30,7 +30,8 @@ Task filenames must match their `id`, for example `short-stable-id.json`. Task i
   "run_ids": [],
   "artifacts": [],
   "commit_policy": "never",
-  "commit_message": "harness: complete {task_id}",
+  "commit_type": "docs",
+  "commit_message": "docs: update {task_id}",
   "notes": ""
 }
 ```
@@ -39,9 +40,11 @@ Task filenames must match their `id`, for example `short-stable-id.json`. Task i
 
 - `never`: do not commit this task automatically.
 - `on_success`: commit after validator `passed` and reviewer `approved`.
-- An object with `mode` and optional `message`, for example `{"mode": "on_success", "message": "harness: {task_id}"}`.
+- An object with `mode` plus optional `message` or `type`, for example `{"mode": "on_success", "type": "feat"}` or `{"mode": "on_success", "message": "feat: {title}"}`.
 
 Commit message templates may use `{task_id}`, `{title}`, and `{run_id}`.
+
+`commit_type` may be used when a task wants the supervisor to generate a standard message without supplying a full `commit_message`. Supported values are `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `style`, `build`, `ci`, `chore`, `deps`, `security`, `ops`, `eval`, `observability`, and `revert`. The default automatic commit message is `chore: complete {task_id}`.
 
 ## Status Values
 

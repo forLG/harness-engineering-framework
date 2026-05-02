@@ -23,6 +23,7 @@ This repository is a universal starting point for a Codex-based harness. Treat i
 - Record substantial work in `docs/exec-plans/active/` while it is in progress, then move it to `docs/exec-plans/completed/`.
 - Preserve logs, traces, screenshots, and eval outputs when they explain a decision or regression.
 - Treat `runtime/tasks/` as the source of truth for the outer task loop.
+- Use functional Git commit prefixes such as `docs:`, `feat:`, `fix:`, `test:`, or `chore:`; see `docs/OPERATIONS.md` for the full commit message policy.
 - Escalate to a human for credentials, production changes, destructive actions, ambiguous policy decisions, and any operation outside the harness permission model.
 
 ## Required First Check

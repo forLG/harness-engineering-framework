@@ -23,6 +23,24 @@ ROLE_DIR = ROOT / "docs" / "agent-roles"
 
 RESULT_MARKER = "HARNESS_RESULT_JSON:"
 CODEX_COMMAND = "codex"
+ALLOWED_COMMIT_TYPES = {
+    "feat",
+    "fix",
+    "docs",
+    "test",
+    "refactor",
+    "perf",
+    "style",
+    "build",
+    "ci",
+    "chore",
+    "deps",
+    "security",
+    "ops",
+    "eval",
+    "observability",
+    "revert",
+}
 
 
 @dataclass
@@ -336,7 +354,14 @@ def commit_message(task: dict[str, Any], run_id: str) -> str:
     if not template:
         template = str(task.get("commit_message", "")).strip()
     if not template:
-        template = "harness: complete {task_id}"
+        commit_type = ""
+        if isinstance(policy, dict):
+            commit_type = str(policy.get("type", "")).strip().lower()
+        if not commit_type:
+            commit_type = str(task.get("commit_type", "")).strip().lower()
+        if commit_type not in ALLOWED_COMMIT_TYPES:
+            commit_type = "chore"
+        template = f"{commit_type}: complete {{task_id}}"
 
     values = {
         "task_id": str(task.get("id", "")),
@@ -347,7 +372,7 @@ def commit_message(task: dict[str, Any], run_id: str) -> str:
         message = template.format(**values)
     except (KeyError, ValueError):
         message = template
-    return message.strip() or f"harness: complete {values['task_id']}"
+    return message.strip() or f"chore: complete {values['task_id']}"
 
 
 def commit_preflight() -> CommitResult:

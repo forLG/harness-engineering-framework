@@ -19,6 +19,27 @@ TASK_STATE_DIRS = {
 
 TASK_ID_PATTERN = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 EXAMPLE_TASK = TASK_ROOT / "queue" / "example-task.json"
+ALLOWED_COMMIT_TYPES = {
+    "feat",
+    "fix",
+    "docs",
+    "test",
+    "refactor",
+    "perf",
+    "style",
+    "build",
+    "ci",
+    "chore",
+    "deps",
+    "security",
+    "ops",
+    "eval",
+    "observability",
+    "revert",
+}
+COMMIT_MESSAGE_PATTERN = re.compile(
+    rf"^({'|'.join(sorted(ALLOWED_COMMIT_TYPES))})(\([a-z0-9._-]+\))?: .+"
+)
 
 
 def fail(message: str, remediation: str) -> str:
@@ -35,6 +56,10 @@ def is_non_empty_string(value: Any) -> bool:
 
 def is_string_list(value: Any) -> bool:
     return isinstance(value, list) and bool(value) and all(is_non_empty_string(item) for item in value)
+
+
+def has_valid_commit_message_prefix(value: str) -> bool:
+    return bool(COMMIT_MESSAGE_PATTERN.fullmatch(value.strip()))
 
 
 def validate_task_file(path: Path) -> list[str]:
@@ -124,7 +149,7 @@ def validate_task_file(path: Path) -> list[str]:
             )
         )
 
-    optional_string_fields = ("parent", "created_at", "updated_at", "commit_message", "notes")
+    optional_string_fields = ("parent", "created_at", "updated_at", "commit_type", "commit_message", "notes")
     for field in optional_string_fields:
         value = task.get(field)
         if value is not None and not isinstance(value, str):
@@ -134,6 +159,24 @@ def validate_task_file(path: Path) -> list[str]:
                     f"Change `{field}` to a string or remove it.",
                 )
             )
+
+    commit_type = task.get("commit_type")
+    if isinstance(commit_type, str) and commit_type not in ALLOWED_COMMIT_TYPES:
+        failures.append(
+            fail(
+                f"{task_path} commit_type `{commit_type}` is not supported.",
+                f"Use one of: {', '.join(sorted(ALLOWED_COMMIT_TYPES))}.",
+            )
+        )
+
+    commit_message = task.get("commit_message")
+    if isinstance(commit_message, str) and commit_message.strip() and not has_valid_commit_message_prefix(commit_message):
+        failures.append(
+            fail(
+                f"{task_path} commit_message must start with a supported functional prefix.",
+                "Use a format such as `docs: update task schema` or `feat(runtime): add commit metadata`.",
+            )
+        )
 
     if "priority" in task and not isinstance(task["priority"], int):
         failures.append(
@@ -173,6 +216,7 @@ def validate_task_file(path: Path) -> list[str]:
         elif isinstance(commit_policy, dict):
             mode = commit_policy.get("mode")
             message = commit_policy.get("message")
+            policy_type = commit_policy.get("type")
             if mode not in valid_modes:
                 failures.append(
                     fail(
@@ -185,6 +229,20 @@ def validate_task_file(path: Path) -> list[str]:
                     fail(
                         f"{task_path} commit_policy.message must be a string when present.",
                         "Use a string commit message template or remove the field.",
+                    )
+                )
+            elif isinstance(message, str) and message.strip() and not has_valid_commit_message_prefix(message):
+                failures.append(
+                    fail(
+                        f"{task_path} commit_policy.message must start with a supported functional prefix.",
+                        "Use a format such as `fix: handle blocked task state` or `test(evals): add smoke baseline`.",
+                    )
+                )
+            if policy_type is not None and policy_type not in ALLOWED_COMMIT_TYPES:
+                failures.append(
+                    fail(
+                        f"{task_path} commit_policy.type `{policy_type}` is not supported.",
+                        f"Use one of: {', '.join(sorted(ALLOWED_COMMIT_TYPES))}.",
                     )
                 )
         else:

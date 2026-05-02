@@ -178,6 +178,7 @@ python tools/harness_loop.py --once --execute --auto-commit
 ```
 
 Auto-commit requires a clean Git worktree before the task starts, commits only after validator and reviewer approval, and never pushes.
+Automatic commit messages use functional prefixes such as `docs:`, `feat:`, `fix:`, `test:`, or `chore:`. Tasks can set a full `commit_message` or a `commit_type` for generated messages.
 
 ## Entropy Control
 

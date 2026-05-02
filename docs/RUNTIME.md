@@ -56,11 +56,14 @@ Each role must end with `HARNESS_RESULT_JSON:` followed by valid JSON. The super
 Automatic commits are a supervisor capability, not an implementer-agent responsibility. Enable them in either of two ways:
 
 - Pass `--auto-commit` to commit every successful task run.
-- Add task metadata such as `"commit_policy": "on_success"` or `"commit_policy": {"mode": "on_success", "message": "harness: {task_id}"}`.
+- Add task metadata such as `"commit_policy": "on_success"` or `"commit_policy": {"mode": "on_success", "message": "feat: {title}"}`.
+- Add `"commit_type": "docs"` when the task should use that functional prefix but does not need a full custom message.
 
 The loop commits only after the validator returns `passed` and the reviewer returns `approved`. It does not commit blocked runs, failed validation, or runs that created follow-up work.
 
 Auto-commit preflight requires a clean Git worktree before the task starts. If the tree already has modified, staged, or untracked files, the supervisor stops before invoking Codex so unrelated human work is not included in the automated commit.
+
+Automatic commit messages follow the functional prefix policy in `docs/OPERATIONS.md`. If no task-level message is supplied, the loop uses `chore: complete {task_id}`.
 
 ## Human Interaction
 
