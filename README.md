@@ -117,7 +117,9 @@ Use JSON output when a harness runner needs to capture events:
 codex exec --full-auto --json -C path/to/real-project "Run the harness evaluation plan"
 ```
 
-Store run outputs in:
+Current supervisor runs write role prompts, role outputs, and summaries under `artifacts/runs/`.
+The other artifact directories are reserved buckets for task-specific evidence and may be empty
+until a project needs them:
 
 - `artifacts/logs/`
 - `artifacts/traces/`

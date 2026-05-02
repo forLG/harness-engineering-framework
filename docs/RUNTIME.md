@@ -78,12 +78,12 @@ The loop must stop or mark a task `blocked` when a role requests human escalatio
 - Active tasks: `runtime/tasks/active/`
 - Completed tasks: `runtime/tasks/completed/`
 - Blocked tasks: `runtime/tasks/blocked/`
-- Run artifacts: `artifacts/runs/`
-- Review artifacts: `artifacts/reviews/`
-- Validation artifacts: `artifacts/validation/`
-- Logs: `artifacts/logs/`
-- Traces: `artifacts/traces/`
-- Screenshots: `artifacts/screenshots/`
+- Active run artifacts: `artifacts/runs/`. The supervisor writes role prompts, role outputs, and `summary.json` here.
+- Reserved review artifacts: `artifacts/reviews/`. Current reviewer output is stored under each run directory unless a task needs separate review evidence.
+- Reserved validation artifacts: `artifacts/validation/`. Current validator output is stored under each run directory unless a task needs separate validation evidence.
+- Reserved logs: `artifacts/logs/`. Use only for logs that need to outlive a local command or explain a decision.
+- Reserved traces: `artifacts/traces/`. Use only for execution traces or timeline data that should be preserved.
+- Reserved screenshots: `artifacts/screenshots/`. Use for browser or UI verification evidence.
 - Eval results: `evals/results/`
 - Maintenance reports: `artifacts/maintenance/`
 
