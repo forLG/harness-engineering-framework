@@ -10,6 +10,7 @@ This repository is a universal starting point for a Codex-based harness. Treat i
 - `docs/`: durable project knowledge, quality docs, design notes, environment information, distilled references, and execution plans.
 - `docs/agent-roles/`: role prompts for implementer, validator, reviewer, and follow-up planner runs.
 - `references/`: external or raw long-lived source material used by agents; use `docs/references/` for project-local interpretation.
+- `.skills/`: repo-local Codex skills for applying and operating the harness.
 - `runtime/`: harness runtime state, task queue, and implementation placeholder.
 - `tools/`: mechanical checks and operational utilities.
 - `evals/`: benchmark tasks, acceptance criteria, and eval results.

@@ -13,20 +13,169 @@ The goal is not to store one large prompt. The goal is to create repository-nati
 - A structural and guardrail validator in `tools/validate_harness_structure.py`, with task-specific checks in `tools/validate_guardrails.py`.
 - A smoke evaluation runner in `tools/run_evals.py`, with starter benchmark definitions under `evals/benchmarks/`.
 - An entropy control runner in `tools/entropy_control.py` for stale docs, overlap, bad harness code, queue health, artifacts, eval drift, and quality scoring.
+- A repo-local Codex skill in `.skills/apply-harness-framework/` that guides the scaffold adoption workflow.
 
 ## Apply It To A Real Project
 
-1. Copy this framework into the root of the target project.
-2. Keep `AGENTS.md` short. It should stay a map, not a full knowledge base.
-3. Start Codex in the target project:
+The recommended adoption model is phase-by-phase, guided by the repo-local skill in `.skills/apply-harness-framework/`.
+
+Do not ask Codex to fill every placeholder from one giant prompt and then trust the result. A single prompt is useful as an entry point, but the actual work should inspect the target repository, fill facts from evidence, preserve unknowns as explicit placeholders, and validate after each meaningful phase.
+
+### The Three Adoption Options
+
+There are three practical ways to use this scaffold:
+
+1. Manual phase filling.
+   This is safest when the project is sensitive or poorly documented. A human fills each document after inspecting the repository. It is accurate but slow.
+
+2. A single start prompt.
+   This is fastest for demos and prototypes. It can produce a useful first draft, but it is more likely to invent commands, architecture, owners, or policies.
+
+3. Skill-guided phased adoption.
+   This is the recommended path. The `.skills/apply-harness-framework/` skill gives Codex the workflow, fill order, evidence rules, validation steps, and reporting format. Codex still works phase by phase, but the process is repeatable and easier for new users.
+
+In short: use a start prompt to launch the work, use the skill to guide the process, and use phases to keep the result trustworthy.
+
+### Copy The Framework
+
+Copy this framework into the root of the target project. The target project should then contain the top-level files and directories from this scaffold, including:
+
+- `AGENTS.md`
+- `ARCHITECTURE.md`
+- `PLANS.md`
+- `README.md`
+- `docs/`
+- `runtime/`
+- `tools/`
+- `evals/`
+- `artifacts/`
+- `.skills/`
+
+If the target project already has files with the same names, merge carefully instead of overwriting project-specific information. Keep the target project's existing setup, architecture, and operations docs as evidence.
+
+### Start Codex In The Target Project
+
+Run Codex from the target repository root:
 
 ```bash
 codex -C path/to/real-project
 ```
 
-4. Ask Codex to inspect the repository before filling placeholders.
-5. Fill only facts grounded in the repository. Keep `PROJECT_PLACEHOLDER(...)` entries for unknowns.
-6. Run the structural validator and the project's normal checks.
+If your Codex environment discovers repo-local skills, invoke the skill directly:
+
+```text
+Use $apply-harness-framework to apply this scaffold to the current repository.
+```
+
+If repo-local skills are not auto-discovered, point Codex at the skill file:
+
+```text
+Read .skills/apply-harness-framework/SKILL.md and follow it to apply this harness framework to the current repository.
+```
+
+### Recommended Start Prompt
+
+Use this as the first message after copying the scaffold:
+
+```text
+Apply the harness engineering framework in this repository to the current project.
+
+Use .skills/apply-harness-framework/SKILL.md as the workflow.
+
+First inspect the repository structure, build and test commands, runtime stack, docs, CI, scripts, dependency files, service configuration, and existing conventions.
+
+Then work phase by phase. Fill only facts grounded in repository files or safe command output. Do not invent setup commands, service ports, architecture boundaries, owners, security rules, deployment rules, or validation commands.
+
+When a fact cannot be discovered, leave PROJECT_PLACEHOLDER(<key>): <exact missing information needed and likely source>.
+
+Keep AGENTS.md concise. Put durable detail in focused docs.
+
+After each phase, run python tools/validate_harness_structure.py and any safe target-project validation command discovered from the repository.
+```
+
+### Adoption Phases
+
+Phase 1 creates basic repository orientation:
+
+- Fill `docs/ENVIRONMENT.md`.
+- Fill `ARCHITECTURE.md`.
+- Keep `AGENTS.md` short and project-specific.
+- Outcome: a new agent can understand the repository shape and run at least one safe validation command.
+
+Phase 2 defines how agent work runs and leaves evidence:
+
+- Fill `docs/RUNTIME.md`.
+- Fill `docs/OBSERVABILITY.md`.
+- Fill `docs/RELIABILITY.md`.
+- Outcome: tasks, runs, failures, logs, traces, screenshots, and validation evidence have clear homes.
+
+Phase 3 turns expectations into safety and measurement:
+
+- Fill `docs/GUARDRAILS.md`.
+- Fill `docs/SECURITY.md`.
+- Fill `docs/EVALUATION.md`.
+- Fill `docs/QUALITY_SCORE.md`.
+- Outcome: project rules start becoming checks, benchmark tasks, and quality signals.
+
+Phase 4 makes the harness maintainable:
+
+- Fill `docs/OPERATIONS.md`.
+- Replace the applied-project section in `PLANS.md`.
+- Add active execution plans under `docs/exec-plans/active/` when work is substantial.
+- Outcome: the project has a repeatable planning, review, cleanup, and maintenance loop.
+
+### What Codex Should Inspect
+
+Before editing placeholders, Codex should inspect high-value repository evidence:
+
+- File structure from `rg --files`.
+- Package manifests and lockfiles.
+- Build, test, lint, typecheck, and dev-server scripts.
+- CI workflows and deployment configuration.
+- Docker, Compose, dev container, or service definitions.
+- Environment examples such as `.env.example` or `.env.sample`.
+- Existing README files, architecture docs, ADRs, API docs, and runbooks.
+- Test directories, fixtures, benchmark tasks, and eval files.
+- Existing agent instructions such as `AGENTS.md`, `.codex/`, or `.github/`.
+
+### What Codex Should Not Invent
+
+Leave a `PROJECT_PLACEHOLDER(...)` when the repository does not answer the question. This is better than confident fiction.
+
+Common facts that must be evidence-backed:
+
+- Runtime versions.
+- Dependency installation commands.
+- Build, test, lint, and typecheck commands.
+- Local services and ports.
+- Environment variables and secret handling.
+- Source layers and dependency boundaries.
+- Generated files and contract files.
+- Deployment process and approval rules.
+- Product-specific security restrictions.
+- Evaluation acceptance criteria.
+
+### Validation During Adoption
+
+Run the harness validator after changing framework layout or task state:
+
+```bash
+python tools/validate_harness_structure.py
+```
+
+Run entropy control when you want an adoption progress report:
+
+```bash
+python tools/entropy_control.py --report
+```
+
+Run smoke evals after changing runtime, task, or eval behavior:
+
+```bash
+python tools/run_evals.py --suite smoke
+```
+
+When applied to a real project, also run the project's own safe validation commands, such as tests, type checks, lint checks, builds, and UI verification.
 
 ## Placeholder Convention
 
@@ -47,75 +196,6 @@ FRAMEWORK_TODO(<key>): <framework improvement still needed>
 When applying the scaffold, replace project placeholders with repository-grounded facts. If the fact cannot be discovered, leave the placeholder in place and make the missing input precise.
 
 Entropy control records valid `PROJECT_PLACEHOLDER(...)` and `FRAMEWORK_TODO(...)` entries as an intentional placeholder inventory in its reports and summarizes them in `docs/QUALITY_SCORE.md`; they do not affect score or queued cleanup tasks.
-
-## Starter Prompt
-
-Use this prompt after copying the scaffold into a real project:
-
-```text
-Apply the harness engineering framework in this repository to the current project.
-
-First inspect the repository structure, build and test commands, runtime stack, docs, CI, scripts, dependency files, service configuration, and existing conventions.
-
-Then fill the placeholder harness files with project-specific information:
-- Keep AGENTS.md concise and point to deeper docs.
-- Fill ARCHITECTURE.md with actual project architecture, boundaries, runtime shape, and extension points.
-- Fill docs/ENVIRONMENT.md with local setup, dependency installation, services, ports, environment variables, and reproducible commands.
-- Fill docs/RUNTIME.md with how Codex or another agent should be invoked, supervised, resumed, and logged for this project.
-- Fill docs/OBSERVABILITY.md with logs, traces, screenshots, metrics, browser or UI verification, and local reproduction steps.
-- Fill docs/GUARDRAILS.md with rules that should become mechanical checks.
-- Fill docs/EVALUATION.md with benchmark tasks, acceptance criteria, regression checks, cost reporting, and latency reporting.
-- Fill docs/OPERATIONS.md with merge, review, cleanup, maintenance, and technical debt workflow.
-- Fill docs/RELIABILITY.md, docs/SECURITY.md, and docs/QUALITY_SCORE.md with project-specific standards.
-- Update PLANS.md with a realistic first milestone.
-
-Do not invent facts. If something cannot be discovered, leave `PROJECT_PLACEHOLDER(<key>): <exact missing information needed>`.
-
-After editing, run tools/validate_harness_structure.py and any existing project validation commands you can safely run.
-```
-
-## Suggested Fill Order
-
-### Phase 1: Repository Discovery
-
-Fill:
-
-- `docs/ENVIRONMENT.md`
-- `ARCHITECTURE.md`
-- `AGENTS.md`
-
-Outcome: a new agent can orient itself and run the project locally.
-
-### Phase 2: Runtime And Observability
-
-Fill:
-
-- `docs/RUNTIME.md`
-- `docs/OBSERVABILITY.md`
-- `docs/RELIABILITY.md`
-
-Outcome: the project has a clear model for invoking agents, capturing evidence, reproducing failures, and deciding when a run is complete.
-
-### Phase 3: Guardrails And Evaluation
-
-Fill:
-
-- `docs/GUARDRAILS.md`
-- `docs/EVALUATION.md`
-- `docs/QUALITY_SCORE.md`
-
-Outcome: important expectations start becoming checks, benchmarks, and measurable quality signals.
-
-### Phase 4: Operations
-
-Fill:
-
-- `docs/OPERATIONS.md`
-- `PLANS.md`
-- `docs/exec-plans/active/`
-- `docs/exec-plans/completed/`
-
-Outcome: the project has a repeatable planning, review, cleanup, and maintenance loop.
 
 ## Interactive And Automated Runs
 
