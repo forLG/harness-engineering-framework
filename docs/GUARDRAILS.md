@@ -1,8 +1,8 @@
 # Guardrails
 
-Status: scaffold.
+Status: applied.
 
-Record architecture, style, safety, and operational rules that should become mechanical checks.
+Guardrails define rules that should become mechanical checks where practical. For QR Watch, the highest-risk areas are screenshots, QR payloads, notification credentials, and external message sends.
 
 ## Structural Rules
 
@@ -13,70 +13,67 @@ Record architecture, style, safety, and operational rules that should become mec
 - Role definitions must live under `docs/agent-roles/`.
 - Run evidence must live under `artifacts/runs/`.
 - Maintenance evidence must live under `artifacts/maintenance/`.
-- Naming invariants: task ids should be short, lowercase, and stable.
-- File-size invariants: `AGENTS.md` must stay under the validator limit.
+- `AGENTS.md` must stay under the validator size limit.
 
-## Product-Specific Guardrails
+## Product Dependency Guardrails
 
-Status: project-specific.
+Expected source layers are documented in `ARCHITECTURE.md`.
 
-Fill these sections only when applying the framework to a real repository. The generic framework should provide the enforcement pattern, not invent product facts.
+Allowed dependencies:
 
-### Dependency Boundary Checks
+- `app` may compose all product layers.
+- `capture` may depend on screenshot and image libraries.
+- `detectors` may depend on image and QR detection libraries.
+- `notifiers` may depend on provider clients, `requests`, and standard mail libraries.
+- `state` may depend on local filesystem, JSON, SQLite, hashing, and time utilities.
 
-Status: project-specific.
+Forbidden dependencies:
 
-Define allowed and forbidden dependencies, then encode them as a mechanical check.
+- `detectors` must not send notifications.
+- `capture` must not decode QR codes or call notifiers.
+- `notifiers` must not capture screenshots.
+- `tools/` should not import product runtime modules unless a specific validation command requires it.
 
-Project placeholders:
+Mechanical check: planned after `src/qrwatch/` exists. First implementation can be a small import-boundary check in `tools/validate_qrwatch_boundaries.py`.
 
-- `PROJECT_PLACEHOLDER(allowed-imports): allowed imports between source layers or packages.`
-- `PROJECT_PLACEHOLDER(forbidden-imports): forbidden imports between source layers or packages.`
-- `PROJECT_PLACEHOLDER(generated-file-policy): generated file paths and edit policy.`
-- `PROJECT_PLACEHOLDER(dependency-exceptions): dependency-boundary exceptions and their owners.`
+## Product Safety Guardrails
 
-Mechanical check location:
+- Do not commit notification credentials, mailbox passwords, QQ credentials, WeChat credentials, webhook URLs, provider cookies, or `.env` files.
+- Do not perform real external sends unless the user explicitly provides credentials and a test recipient for that run.
+- Default notifier mode must be dry-run until a real provider is configured.
+- QR payloads should be hashed or redacted in persistent state and logs by default.
+- Screenshots may be stored locally under `%LOCALAPPDATA%\QRWatch\screenshots\` with retention, but must not be committed.
+- Repository `artifacts/screenshots/` may contain screenshots only when a task explicitly requires evidence and the user has reviewed or approved the content.
+- Logs must redact secrets, tokens, webhook URLs, and raw QR payloads unless a debug setting explicitly allows payload logging.
+- Generated packaging output must be documented before agents edit or delete it.
 
-- `PROJECT_PLACEHOLDER(dependency-boundary-check): repository-local checker path, existing linter config, or CI import-boundary rule.`
+Mechanical checks available now:
 
-### Changed-File Requirements
+- `.gitignore` ignores `.env`, logs, runtime databases, and harness artifact contents by default.
+- `python tools/validate_harness_structure.py` validates harness paths and task guardrails.
 
-Status: project-specific.
+Planned checks:
 
-Define validation commands required by changed paths.
+- Secret-pattern scanner for `.env`, webhook URLs, SMTP passwords, and common token names.
+- Screenshot artifact scanner that warns when image files are staged under repository artifacts.
+- QR payload logging test once logging code exists.
+- Dry-run default test once notifier code exists.
 
-Project placeholders:
+## Changed-File Requirements
 
-- `PROJECT_PLACEHOLDER(frontend-validation): frontend or UI changes require build, lint, and UI verification.`
-- `PROJECT_PLACEHOLDER(api-validation): API or contract changes require contract tests.`
-- `PROJECT_PLACEHOLDER(migration-validation): database migration changes require migration validation.`
-- `PROJECT_PLACEHOLDER(security-review): security-sensitive changes require reviewer or human approval.`
-
-Mechanical check location:
-
-- `PROJECT_PLACEHOLDER(changed-file-check): repository-local checker path or CI path filter.`
-
-### Product Safety Rules
-
-Status: project-specific.
-
-Define product-specific restrictions that require escalation or special evidence.
-
-Project placeholders:
-
-- `PROJECT_PLACEHOLDER(production-mutations): production mutation restrictions.`
-- `PROJECT_PLACEHOLDER(secret-handling): credential, secret, and environment-variable handling rules.`
-- `PROJECT_PLACEHOLDER(deployment-approval): deployment approval rules.`
-- `PROJECT_PLACEHOLDER(external-service-mutations): external service mutation rules.`
-
-Mechanical check location:
-
-- `PROJECT_PLACEHOLDER(product-safety-check): docs/SECURITY.md section, repository-local checker path, CI policy gate, or deployment workflow.`
+- `AGENTS.md`, `ARCHITECTURE.md`, `PLANS.md`, or `docs/*.md`: run `python tools/validate_harness_structure.py`.
+- `environment.yml`: run the Conda import smoke test from `docs/ENVIRONMENT.md`.
+- `tools/*.py`: run `python tools/validate_harness_structure.py` and the relevant tool command.
+- Future `src/qrwatch/capture.py`: run screenshot capture smoke tests and avoid preserving screenshots unless needed.
+- Future `src/qrwatch/detectors/`: run QR fixture tests.
+- Future `src/qrwatch/notifiers/`: run dry-run notifier tests; real sends require human approval.
+- Future `src/qrwatch/state.py`: run deduplication and state-recovery tests.
+- Future tray UI code: run unit tests plus a manual tray smoke check on Windows.
 
 ## Tool Rules
 
-- Allowed tools: repository-local reads, edits, local validation commands, artifact writes.
-- Conditionally allowed tools: local `git add --all .` and `git commit` after a successful Ralph loop run when auto-commit is explicitly enabled.
+- Allowed tools: repository-local reads, edits, local validation commands, Conda environment checks, and artifact writes.
+- Conditionally allowed tools: local `git add --all .` and `git commit` after a successful harness loop run when auto-commit is explicitly enabled.
 - Restricted tools: production changes, credential access, destructive filesystem operations, external service mutation, automatic pushes, automatic merges.
 - Escalation-required tools: anything outside the local harness permission model or requiring secrets.
 
@@ -91,20 +88,15 @@ Mechanical check location:
 
 - `AGENTS.md` must remain concise.
 - Durable knowledge belongs in focused docs.
-- Status, placeholder, and framework work language must follow `docs/product-specs/language-conventions.md`.
 - Active execution plans belong in `docs/exec-plans/active/`.
 - Role-specific behavior belongs in `docs/agent-roles/`, not in `AGENTS.md`.
 - Machine-readable task state belongs in JSON files under `runtime/tasks/`.
-- Maintenance automation belongs to Milestone 5 and must not be added to the Milestone 2 Ralph loop.
+- Product roadmap belongs in `PLANS.md`.
 
 ## Future Checks
 
-- Dependency boundary checker: `PROJECT_PLACEHOLDER(dependency-boundary-check): choose or create the project-specific enforcement mechanism.`
-- Task schema checker: implemented in `tools/validate_guardrails.py`.
-- Changed-file requirement checker: `PROJECT_PLACEHOLDER(changed-file-check): choose or create the project-specific enforcement mechanism.`
-- Product safety checker: `PROJECT_PLACEHOLDER(product-safety-check): choose or create the project-specific enforcement mechanism.`
-- Stale documentation checker: implemented for harness docs in `tools/entropy_control.py`; product-specific freshness rules are added after framework adoption.
-- Documentation overlap and broken-reference checker: implemented for repository-local Markdown in `tools/entropy_control.py`.
-- Harness code quality checker: implemented for `tools/*.py` compile health in `tools/entropy_control.py`.
-- Quality score updater: implemented by `tools/entropy_control.py --update-quality-score`.
-- Eval regression gate: implemented by `tools/run_evals.py`.
+- `tools/validate_qrwatch_boundaries.py`: planned dependency boundary check.
+- `tools/validate_qrwatch_security.py`: planned secret, screenshot artifact, and unsafe notifier config check.
+- Product smoke eval suite: planned after the package skeleton exists.
+- Stale documentation checker: available through `tools/entropy_control.py`.
+- Eval regression gate: available through `tools/run_evals.py`.

@@ -1,24 +1,79 @@
 # Architecture
 
-This document defines the universal harness architecture. Project-specific facts use `PROJECT_PLACEHOLDER(...)` until the framework is applied to a real repository.
+Status: applied first pass.
+
+This repository is a Codex harness for a planned Windows Python app. The app will run in the background, periodically capture screenshots from the logged-in Windows desktop, detect QR codes in those screenshots, and notify a configured channel through a provider interface.
+
+No application source files or dependency manifests exist yet. Product architecture below is therefore the intended first implementation, based on the project request dated 2026-05-09.
+
+## Product Shape
+
+The first app should be a small local agent with these responsibilities:
+
+- Capture the screen on a configurable interval.
+- Decode one or more QR codes from each captured frame.
+- Deduplicate detections so the same QR code does not spam notifications.
+- Send detection events through a notifier interface.
+- Persist enough local state and logs to debug failures without storing sensitive screenshots by default.
+
+The first implementation should run inside the logged-in user session. A Windows service can be explored later, but desktop screenshot access from a service has extra Windows session and permission constraints.
+
+## Product Layers
+
+Intended source layout:
+
+- `src/qrwatch/app.py`: application composition and lifecycle.
+- `src/qrwatch/config.py`: environment and config-file loading.
+- `src/qrwatch/capture.py`: Windows screenshot capture abstraction.
+- `src/qrwatch/detectors/`: QR detection implementation.
+- `src/qrwatch/notifiers/`: notifier interface plus email, QQ, WeChat, or webhook adapters.
+- `src/qrwatch/state.py`: deduplication state and local persistence.
+- `src/qrwatch/logging.py`: log configuration and redaction helpers.
+- `tests/`: unit tests and small image fixtures.
+
+TODO: confirm this layout when the first code is added.
+
+## Dependency Boundaries
+
+Allowed dependency direction:
+
+- `app` may depend on `config`, `capture`, `detectors`, `notifiers`, `state`, and `logging`.
+- `capture` should only return image/frame data and metadata. It should not know about QR decoding or notification providers.
+- `detectors` should accept image/frame data and return structured QR detection results.
+- `notifiers` should accept structured detection events. They should not capture screenshots or decode QR codes.
+- `state` should handle deduplication and local persistence only.
+
+Forbidden dependencies:
+
+- Detection code must not send messages directly.
+- Notification adapters must not read screenshots from disk unless a future provider explicitly requires attachments and the user approves that behavior.
+- Harness tools under `tools/` must not import app runtime modules unless a specific validation command is added for that purpose.
+
+Generated files:
+
+- None currently.
+- TODO: document generated build artifacts if PyInstaller, packaging metadata, or installer outputs are added.
+
+Contract files:
+
+- `runtime/tasks/TASK_SCHEMA.md` is the harness task contract.
+- TODO: define app config schema once configuration files are implemented.
 
 ## Runtime Core
 
-Status: implemented.
+The harness runtime provides:
 
-The runtime should provide:
-
-- Task intake and normalization.
+- Task intake and normalization through `runtime/tasks/queue/*.json`.
 - Tool execution with explicit permissions.
 - File-based state persistence for task progress, decisions, and artifacts.
 - Stop conditions, retry rules, and failure classification.
-- Isolated execution environments for local runs, tests, and UI verification.
+- Isolated local runs, tests, and validation commands.
+
+The product runtime is separate from the harness runtime. The product app will own the screenshot loop, QR detection, notification dispatch, and app logs.
 
 ## Extension Points
 
-Status: implemented.
-
-Expected extension points:
+Harness extension points:
 
 - Tool adapters.
 - Repository knowledge indexers.
@@ -27,11 +82,17 @@ Expected extension points:
 - Policy and guardrail checks.
 - Reviewer or maintenance agents.
 
+Product extension points:
+
+- Screenshot backend.
+- QR detector backend.
+- Notification provider adapters.
+- Deduplication strategy.
+- Packaging and background-run strategy.
+
 ## State Model
 
-Status: implemented.
-
-Define where these records live:
+Harness records:
 
 - Task request: `runtime/tasks/queue/*.json`.
 - Plan and progress: `docs/exec-plans/active/`, task status directories under `runtime/tasks/`, and `artifacts/runs/<run-id>/summary.json`.
@@ -40,56 +101,59 @@ Define where these records live:
 - Eval results: `evals/results/`.
 - Human approvals and escalation history: task status, role JSON output, and preserved run artifacts.
 
+Product records:
+
+- App config: TODO: choose environment variables, local config file, or both.
+- Deduplication state: TODO: choose a local JSON or SQLite store.
+- Logs: TODO: choose a local log path and retention policy.
+- Screenshots: store local recent, detection, and error screenshots with retention under `%LOCALAPPDATA%\QRWatch\screenshots\`.
+
 ## Isolation Model
 
-Status: scaffold.
+- Worktrees or task branches: current scaffold runs in the active repository. Future task branches are optional.
+- Local services and ports: no local service or port is required for the first prototype.
+- Credentials and secrets: notification credentials must be supplied by a human and excluded from Git.
+- Runtime artifacts: harness artifacts are stored under `artifacts/`.
+- Production or external systems: notification providers are external systems. Sending real messages requires human-supplied credentials and test recipients.
 
-Define how the harness separates:
+## Security And Privacy Rules
 
-- Worktrees or task branches: current scaffold runs in the active repository; target projects may add task branches or worktrees.
-- Local services and ports: `PROJECT_PLACEHOLDER(local-services): document services, ports, and startup order for the target project.`
-- Credentials and secrets: `PROJECT_PLACEHOLDER(credentials): document secret sources, redaction rules, and escalation boundaries for the target project.`
-- Runtime artifacts: stored under `artifacts/`.
-- Production or external systems: `PROJECT_PLACEHOLDER(external-systems): document production, staging, and external mutation boundaries for the target project.`
+- Treat screenshots as sensitive because they may contain private desktop content.
+- Do not preserve screenshots in repository `artifacts/` unless the task explicitly needs evidence and sensitive content has been reviewed or redacted.
+- Never commit notification credentials, QR payload secrets, mailbox tokens, webhook URLs, or provider cookies.
+- Use test recipients and dry-run notifiers before enabling real QQ, mailbox, WeChat, or webhook sends.
+- Escalate to a human before connecting a real messaging account or storing persistent screenshots.
 
-## Dependency Boundaries
+## Validation Matrix
 
-Status: project-specific.
+Current harness validation:
 
-Fill this section when applying the framework to a real repository. Do not invent product boundaries in the generic scaffold.
+```bash
+python tools/validate_harness_structure.py
+```
 
-Record intended dependency direction before encoding it mechanically.
+Current environment validation:
 
-Fill these placeholders:
+```bash
+conda run -n qrwatch python -c "import cv2, mss, PIL, numpy, dotenv, requests, pytest; print('python ok'); print(cv2.__version__)"
+```
 
-- `PROJECT_PLACEHOLDER(source-layers): identify source layers or packages, such as ui, api, domain, infrastructure, generated, or tests.`
-- `PROJECT_PLACEHOLDER(allowed-imports): list allowed imports between layers or packages.`
-- `PROJECT_PLACEHOLDER(forbidden-imports): list forbidden imports between layers or packages.`
-- `PROJECT_PLACEHOLDER(generated-files): identify generated files and whether agents may edit them directly.`
-- `PROJECT_PLACEHOLDER(contract-files): identify migration, schema, or contract files that require special validation.`
+Planned app validation:
 
-Mechanical check:
+- Unit tests for config loading, deduplication, QR event shaping, and notifier interface behavior.
+- Fixture-based QR detection tests using static test images.
+- Dry-run notification tests that do not contact external services.
+- Optional Windows manual validation for background capture behavior.
 
-- `PROJECT_PLACEHOLDER(dependency-boundary-check): encode dependency boundaries in a repository-local checker, existing linter config, or CI.`
+Primary test command after source files exist:
 
-## Product-Specific Architecture Rules
-
-Status: project-specific.
-
-Use this section only after the framework is applied to a real product repository.
-
-Rules to discover and fill:
-
-- `PROJECT_PLACEHOLDER(source-of-truth): source-of-truth files for product behavior, contracts, schemas, and generated artifacts.`
-- `PROJECT_PLACEHOLDER(ownership): ownership boundaries for product modules or services.`
-- `PROJECT_PLACEHOLDER(runtime-services): runtime services, ports, databases, queues, and external systems.`
-- `PROJECT_PLACEHOLDER(validation-matrix): build, test, lint, typecheck, migration, and UI verification commands required by changed paths.`
-- `PROJECT_PLACEHOLDER(approval-boundaries): deployment, production mutation, credential, and approval boundaries.`
+```bash
+conda run -n qrwatch python -m pytest
+```
 
 ## Open Decisions
 
-- Runtime language: Python supervisor scripts plus Codex CLI role invocations.
-- State backend: repository-local JSON, Markdown, and artifact files.
-- Tool permission model: Codex sandboxing plus role-level escalation rules.
-- Eval runner: `tools/run_evals.py`.
-- Observability backend: repository-local artifacts under `artifacts/`.
+- Packaging and background-run model: scheduled task, tray process, service wrapper, or packaged executable.
+- First real notification provider.
+- Whether QR payloads should be stored, hashed, redacted, or discarded after notification.
+- App name. This document uses `qrwatch` as a working name.

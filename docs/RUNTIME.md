@@ -1,125 +1,158 @@
 # Runtime
 
-Status: scaffold.
+Status: applied.
 
-This harness uses Codex as the worker agent and a repository-local supervisor script as the outer loop. Codex handles implementation, validation, review, and follow-up planning. The supervisor chooses queued tasks, invokes role-specific agents, captures artifacts, moves task state, and queues follow-up work.
+This document defines both the QR Watch product runtime and the Codex harness runtime. QR Watch is a Windows Python background app controlled by a small system tray UI.
 
-## Invocation Modes
+## Product Run Model
+
+Recommended process model: a logged-in Windows user-session process with a system tray icon.
+
+Why this model fits the app:
+
+- Screenshot capture works naturally in the interactive desktop session.
+- The app can run quietly in the background without a full window.
+- The user still has simple controls for Start, Pause, Resume, Stop, status, and opening logs/screenshots.
+- It avoids the complexity of Windows service desktop isolation during the first implementation.
+
+The tray controller should use `pystray`; any small settings/status window can use built-in `tkinter` later if needed.
+
+## Product Entrypoints
+
+Planned commands:
+
+```bash
+conda run -n qrwatch python -m qrwatch --tray
+conda run -n qrwatch python -m qrwatch --run
+conda run -n qrwatch python -m qrwatch --once
+conda run -n qrwatch python -m qrwatch --dry-run
+```
+
+Expected behavior:
+
+- `--tray`: start the tray UI and own the worker lifecycle.
+- `--run`: run the background screenshot loop without tray UI, useful for debugging and scheduled runs.
+- `--once`: capture one frame, run QR detection, write logs/screenshots according to config, then exit.
+- `--dry-run`: never send external messages; log the notification event instead.
+
+These commands are planned until `src/qrwatch/` is implemented.
+
+## Tray UI Controls
+
+Minimum tray menu:
+
+- Status: running, paused, stopped, degraded, or error.
+- Start monitoring.
+- Pause monitoring.
+- Resume monitoring.
+- Capture once.
+- Open logs folder.
+- Open screenshots folder.
+- Open settings file.
+- Exit.
+
+The tray process should keep the UI responsive while the worker loop runs in a background thread. UI actions should communicate with the worker through a small controller object rather than calling capture or notifier code directly.
+
+## Worker Loop
+
+The worker loop owns app behavior:
+
+1. Load config.
+2. Initialize logging, screenshot storage, QR detector, deduplication state, and notifier.
+3. Wait until monitoring is running.
+4. Capture the current screen.
+5. Store screenshot evidence according to retention settings.
+6. Detect QR codes.
+7. Normalize detections into events.
+8. Deduplicate repeated payloads.
+9. Notify configured provider or dry-run logger.
+10. Sleep until the next configured interval.
+11. On pause, stop capture and notification work but keep the tray alive.
+12. On shutdown, flush logs and state.
+
+Default interval: 5 seconds for development. The user can increase it after reliability and storage behavior are proven.
+
+## Runtime State
+
+Real app runs should write local runtime state outside the Git repository:
+
+- Base directory: `%LOCALAPPDATA%\QRWatch\`
+- Logs: `%LOCALAPPDATA%\QRWatch\logs\`
+- Screenshots: `%LOCALAPPDATA%\QRWatch\screenshots\`
+- State: `%LOCALAPPDATA%\QRWatch\state\`
+- Config: `%LOCALAPPDATA%\QRWatch\config.env` or repository-local `.env` during development.
+
+Repository `artifacts/` directories remain harness evidence buckets. Do not use them as the default product runtime store.
+
+## Configuration
+
+Planned environment variables:
+
+- `QRWATCH_INTERVAL_SECONDS`: screenshot interval.
+- `QRWATCH_DRY_RUN`: when true, do not send external messages.
+- `QRWATCH_NOTIFY_PROVIDER`: `dry_run`, `email`, `webhook`, `qq`, or `wechat`.
+- `QRWATCH_SCREENSHOT_MODE`: `recent`, `detections`, `errors`, or `all`.
+- `QRWATCH_SCREENSHOT_RETENTION_COUNT`: maximum recent screenshots to keep.
+- `QRWATCH_DEDUP_SECONDS`: suppress repeated QR payloads during this window.
+- `QRWATCH_LOG_LEVEL`: `DEBUG`, `INFO`, `WARNING`, or `ERROR`.
+
+Provider-specific credentials stay in local env/config only and must never be committed.
+
+## Harness Invocation Modes
 
 - Human-supervised interactive runs: `codex -C <project>`.
-- One-shot non-interactive runs: `codex exec --full-auto -C <project> "<prompt>"`.
 - Harness task loop preview: `python tools/harness_loop.py --once`.
 - Harness task loop execution: `python tools/harness_loop.py --once --execute`.
-- Harness task loop with successful-run commits: `python tools/harness_loop.py --once --execute --auto-commit`.
-- Batch execution: `python tools/harness_loop.py --until-empty --execute --max-tasks 5`.
 - Harness smoke evals: `python tools/run_evals.py --suite smoke`.
 - Entropy report: `python tools/entropy_control.py --report`.
-- Entropy report with queued cleanup tasks: `python tools/entropy_control.py --report --queue-tasks`.
-- Entropy report with quality score refresh: `python tools/entropy_control.py --report --update-quality-score`.
 
-The supervisor defaults to preview mode. It writes the prompts it would send to Codex without moving task state or invoking the agent.
+When `--execute` is used, the supervisor invokes role agents with `codex exec --full-auto -C <repo> ...`. The supervisor writes role prompts, role outputs, and summaries under `artifacts/runs/<run-id>/`.
 
-When `--execute` is used, the supervisor invokes role agents with `codex exec --full-auto -C <repo> ...`. `--full-auto` is the sandboxed low-friction Codex mode; it is not the dangerous approval-and-sandbox bypass mode.
-
-## Runner Entrypoints
-
-- `tools/harness_loop.py`: Ralph-style outer loop supervisor.
-- `tools/run_evals.py`: eval runner for benchmark definitions under `evals/benchmarks/`.
-- `tools/entropy_control.py`: maintenance runner for stale docs, doc overlap, bad harness code, queue health, artifact hygiene, eval drift, and quality scoring.
-- `tools/validate_harness_structure.py`: structural and guardrail validator for required harness files, directories, and task state.
-- `tools/validate_guardrails.py`: task schema, naming, and status-directory validator used by the structural validator.
-- `runtime/tasks/TASK_SCHEMA.md`: task file contract.
-- `docs/agent-roles/*.md`: role-specific responsibilities and machine-readable output contracts.
-
-## Task Loop
-
-The outer loop is:
-
-1. Select the next `queued` task from `runtime/tasks/queue/`.
-2. Create `artifacts/runs/<timestamp>-<task-id>/`.
-3. Move the task to `runtime/tasks/active/` when `--execute` is used.
-4. Invoke the implementer role with `docs/agent-roles/implementer.md`.
-5. Invoke the validator role with `docs/agent-roles/validator.md`.
-6. Invoke the reviewer role with `docs/agent-roles/reviewer.md`.
-7. If validation fails or review requests follow-up, invoke `docs/agent-roles/followup-planner.md`.
-8. Convert planner output into new task files in `runtime/tasks/queue/`.
-9. Move the original task to `runtime/tasks/completed/` or `runtime/tasks/blocked/`.
-10. Save `summary.json` and all role outputs under the run artifact directory.
-11. When auto-commit is enabled and the run succeeded, run `git add --all .` and `git commit`.
-
-Entropy control is outside the core implementation path. Run `tools/entropy_control.py` directly for scheduled or batch maintenance.
-
-Each role must end with `HARNESS_RESULT_JSON:` followed by valid JSON. The supervisor uses that final line to decide the next state.
-
-## Automatic Git Commits
-
-Automatic commits are a supervisor capability, not an implementer-agent responsibility. Enable them in either of two ways:
-
-- Pass `--auto-commit` to commit every successful task run.
-- Add task metadata such as `"commit_policy": "on_success"` or `"commit_policy": {"mode": "on_success", "message": "feat: {title}"}`.
-- Add `"commit_type": "docs"` when the task should use that functional prefix but does not need a full custom message.
-
-The loop commits only after the validator returns `passed` and the reviewer returns `approved`. It does not commit blocked runs, failed validation, or runs that created follow-up work.
-
-Auto-commit preflight requires a clean Git worktree before the task starts. If the tree already has modified, staged, or untracked files, the supervisor stops before invoking Codex so unrelated human work is not included in the automated commit.
-
-Automatic commit messages follow the functional prefix policy in `docs/OPERATIONS.md`. If no task-level message is supplied, the loop uses `chore: complete {task_id}`.
-
-## Human Interaction
-
-Humans can supervise at three points:
-
-- Before execution: run `python tools/harness_loop.py --once` to inspect prompts.
-- During execution: the supervisor uses Codex `--full-auto`, so safe workspace commands can run without an interactive approval prompt while still using Codex sandboxing.
-- After execution: inspect `artifacts/runs/<run-id>/summary.json`, role outputs, and queued follow-up tasks.
-
-The loop must stop or mark a task `blocked` when a role requests human escalation.
-
-## State and Artifacts
+## Harness State And Artifacts
 
 - Task queue: `runtime/tasks/queue/`
 - Active tasks: `runtime/tasks/active/`
 - Completed tasks: `runtime/tasks/completed/`
 - Blocked tasks: `runtime/tasks/blocked/`
-- Active run artifacts: `artifacts/runs/`. The supervisor writes role prompts, role outputs, and `summary.json` here.
-- Reserved review artifacts: `artifacts/reviews/`. Current reviewer output is stored under each run directory unless a task needs separate review evidence.
-- Reserved validation artifacts: `artifacts/validation/`. Current validator output is stored under each run directory unless a task needs separate validation evidence.
-- Reserved logs: `artifacts/logs/`. Use only for logs that need to outlive a local command or explain a decision.
-- Reserved traces: `artifacts/traces/`. Use only for execution traces or timeline data that should be preserved.
-- Reserved screenshots: `artifacts/screenshots/`. Use for browser or UI verification evidence.
+- Run artifacts: `artifacts/runs/`
+- Review artifacts: `artifacts/reviews/`
+- Validation artifacts: `artifacts/validation/`
+- Harness logs: `artifacts/logs/`
+- Harness traces: `artifacts/traces/`
+- Harness screenshots: `artifacts/screenshots/`
 - Eval results: `evals/results/`
-- Maintenance reports: `artifacts/maintenance/`
 
-## Entropy Control Loop
+## Validation Commands
 
-The entropy loop has four phases:
+Harness structure:
 
-1. Deterministic report: `tools/entropy_control.py --report` scans for documentation overlap, placeholders, broken local references, undocumented tools, Python compile failures, task queue health, run summary hygiene, eval baseline drift, and quality score inputs.
-2. Queued cleanup tasks: `--queue-tasks` converts high- and medium-severity findings into normal task JSON files under `runtime/tasks/queue/`.
-3. Maintenance planning: `docs/agent-roles/maintenance-planner.md` is available for semantic triage when findings need judgment, grouping, or escalation.
-4. Maintenance scheduling: run `tools/entropy_control.py --report` or `tools/entropy_control.py --report --queue-tasks` outside the task loop when cleanup checks are needed.
+```bash
+python tools/validate_harness_structure.py
+```
 
-The entropy tool must not silently delete artifacts, rewrite broad documentation, or mutate product code. It reports, refreshes quality scoring when explicitly requested, and queues work for the existing implementer, validator, and reviewer flow.
+Environment smoke test:
 
-## Eval Loop
+```bash
+conda run -n qrwatch python -c "import cv2, mss, PIL, numpy, dotenv, requests, pytest, pystray; print('python ok'); print(cv2.__version__)"
+```
 
-The eval runner stages benchmark tasks into `runtime/tasks/queue/`, gives them a high-priority value so they are selected ahead of normal work, runs the harness loop or deterministic commands, checks required artifacts, records latency and status, then removes the staged eval task.
+Product tests after source exists:
 
-Smoke evals run in preview mode and do not invoke Codex. By default, suite results are compared against `evals/baselines/<suite>.json`; use `--update-baseline` only after a known-good pass. Product-specific suites may add execute-mode benchmarks later, but those should define cost, latency, sandbox, and approval expectations before being used in CI.
+```bash
+conda run -n qrwatch python -m pytest
+```
 
 ## Stop Conditions
 
+Product runtime:
+
+- Stop: user selects Exit, sends a termination signal, or unrecoverable initialization fails.
+- Pause: user selects Pause; the tray remains active and the worker loop stops capturing.
+- Degraded: screenshot capture, QR detection, or notification fails but the app can keep running after logging the failure.
+- Error: repeated failures exceed the configured threshold or credentials/config are invalid.
+
+Harness runtime:
+
 - Success: validator returns `passed` and reviewer returns `approved`.
-- Follow-up: validator returns `failed` or reviewer returns `needs_followup`; the planner may create new queued tasks.
-- Blocked: any role returns `blocked`, Codex is unavailable, auto-commit preflight fails, or required human input is needed.
-- Retry: create a follow-up task instead of silently rerunning the same task.
-- Timeout: `FRAMEWORK_TODO(timeout-policy): add subprocess timeout and task retry metadata after the first real run.`
-
-## Open Decisions
-
-- Codex invocation method: `codex exec --full-auto -C <repo> "<assembled prompt>"` for supervisor execute mode.
-- Interactive command: `codex -C <repo>`.
-- Non-interactive command: managed by `tools/harness_loop.py`.
-- Approval policy: supervisor execute mode uses Codex's sandboxed `--full-auto` mode by default, plus role-level escalation rules; auto-commit is local-only and never pushes.
-- JSON or trace format: role outputs use `HARNESS_RESULT_JSON`; run summary uses JSON.
-- Resume strategy: continue from task files and artifacts, not hidden process memory.
+- Follow-up: validator returns `failed` or reviewer returns `needs_followup`.
+- Blocked: required human input, credentials, external sends, or policy decisions are needed.

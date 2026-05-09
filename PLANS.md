@@ -1,103 +1,100 @@
 # Plans
 
-Status: scaffold.
+Status: applied.
 
-This file is the plan index. Keep active execution detail in `docs/exec-plans/active/` and completed plans in `docs/exec-plans/completed/`.
+This file is the product roadmap for the Windows Python QR Watch app and the harness work needed to support it. Keep active execution detail in `docs/exec-plans/active/` and completed plans in `docs/exec-plans/completed/`.
 
-For the open-source framework, this document tracks framework work. When the scaffold is copied into a real project, keep the structure but replace the applied project section with repository-grounded milestones. Do not invent a fictional app roadmap in the framework repository.
+## Current Product Roadmap
 
-## Current Framework Roadmap
-
-Status: implemented.
-
-### Milestone 1: Framework Skeleton
+### Milestone 1: Harness Activation And Environment
 
 Status: implemented.
 
-Goal: establish a repo-legible harness foundation with short entry points, durable docs, placeholder directories, and a structural validator.
+Goal: make the repository legible as a Windows Python QR monitoring app and provide a reproducible local environment.
 
 Acceptance criteria:
 
-- `AGENTS.md` maps the repository and stays concise.
-- `ARCHITECTURE.md` names runtime core and extension points.
-- `docs/` contains quality, reliability, security, guardrail, observability, evaluation, and operations placeholders.
-- `tools/validate_harness_structure.py` verifies required paths.
+- `AGENTS.md`, `ARCHITECTURE.md`, and `docs/ENVIRONMENT.md` describe the QR Watch product rather than the generic scaffold.
+- `environment.yml` defines the `qrwatch` Conda environment.
+- The starter environment installs screenshot, QR detection, image, config, HTTP, and test packages.
+- `python tools/validate_harness_structure.py` passes.
+- The environment import smoke test passes.
 
-### Milestone 2: Runtime Prototype
+### Milestone 2: Package Skeleton And CLI
 
-Status: implemented.
+Status: planned.
 
-Goal: implement the minimal Ralph-style outer task loop.
-
-Acceptance criteria:
-
-- Task state is externalized under `runtime/tasks/`.
-- Role prompts exist for implementer, validator, reviewer, and follow-up planner agents.
-- `tools/harness_loop.py --once` previews the assembled prompts.
-- `tools/harness_loop.py --once --execute` can run one queued task through Codex.
-- Run outputs are saved under `artifacts/runs/`.
-- Follow-up tasks can be generated into `runtime/tasks/queue/`.
-- Successful runs can optionally create local Git commits after validation and review.
-- Logs and artifacts are inspectable.
-- One benchmark task runs end to end.
-
-### Milestone 3: Mechanical Guardrails
-
-Status: implemented.
-
-Goal: convert architecture and quality rules into checks.
+Goal: create the first runnable Python package without implementing real screenshot or notification behavior yet.
 
 Acceptance criteria:
 
-- Task schema and task state-directory alignment are checked.
-- Task id naming and filename/id matching are checked.
-- Guardrail failures include remediation guidance.
-- Dependency boundaries are checked.
-- Documentation freshness is checked.
-- File and naming invariants are checked.
+- `src/qrwatch/` exists with the product layers documented in `ARCHITECTURE.md`.
+- A `qrwatch` CLI or module entrypoint starts in dry-run mode.
+- Configuration loading supports interval, notifier provider, dry-run mode, and credential sources.
+- `conda run -n qrwatch python -m pytest` runs at least one passing smoke test.
 
-### Milestone 4: Evaluation Loop
+### Milestone 3: Screenshot Capture And QR Detection
 
-Status: implemented.
+Status: planned.
 
-Goal: add repeatable evals with cost, latency, and quality reporting.
+Goal: prove local screenshot capture and QR detection in the logged-in Windows desktop session.
 
 Acceptance criteria:
 
-- Benchmark tasks are versioned under `evals/benchmarks/`.
-- `tools/run_evals.py --suite smoke` runs deterministic local smoke benchmarks.
-- Suite baselines are versioned under `evals/baselines/`.
-- Eval results are stored in `evals/results/`.
-- Regressions against the current baseline are visible before merge through a nonzero eval runner exit code.
-- Cost fields are recorded as `null` until execute-mode benchmarks can measure model usage.
-- Product-specific evals have a template under `evals/benchmarks/product-template/` but are not runnable until a target project fills them.
+- Screenshot capture uses `mss` behind `src/qrwatch/capture.py`.
+- QR detection uses OpenCV behind `src/qrwatch/detectors/`.
+- Static fixture tests cover at least one QR-positive and one QR-negative image.
+- A manual smoke command can inspect the current screen without saving screenshots by default.
 
-### Milestone 5: Entropy Control
+### Milestone 4: Deduplication And Events
 
-Status: implemented.
+Status: planned.
 
-Goal: add recurring maintenance for stale docs, drift, and quality debt.
+Goal: convert raw QR detections into notification-ready events without repeated spam.
 
 Acceptance criteria:
 
-- Quality score is updated on a schedule or command.
-- Stale docs, documentation overlap, broken local references, and bad harness code are detected.
-- Cleanup tasks are proposed as plans or queued harness tasks.
-- Maintenance reports are preserved under `artifacts/maintenance/`.
-- Entropy control can run manually and can be invoked automatically by the supervisor on an opt-in cadence.
+- Detection results are normalized into structured events.
+- Repeated QR payloads are suppressed for a configurable window.
+- Local state uses a small JSON or SQLite store.
+- Tests cover repeated detections, expiry, and multiple QR codes in one frame.
 
-## Applied Project Plan Template
+### Milestone 5: Notification Provider Interface
 
-Use this section only after copying the framework into a target repository. Replace these entries with facts discovered from that project.
+Status: planned.
 
-### Milestone 1: Project Harness Orientation
-
-Status: project-specific.
-
-Goal: `PROJECT_PLACEHOLDER(first-project-milestone-goal): define the first realistic milestone for applying the harness to this repository.`
+Goal: add safe notification dispatch with dry-run behavior first.
 
 Acceptance criteria:
 
-- `PROJECT_PLACEHOLDER(project-orientation): AGENTS.md, ARCHITECTURE.md, and docs/ENVIRONMENT.md reflect the target repository's actual structure, setup, and validation commands.`
-- `PROJECT_PLACEHOLDER(project-validation): the target project's normal validation commands are documented and at least one safe command has been run.`
-- `PROJECT_PLACEHOLDER(project-evidence): useful setup, validation, or failure evidence is preserved under artifacts/ when it explains a decision.`
+- `src/qrwatch/notifiers/` defines a provider interface.
+- Dry-run notifier logs redacted event metadata without sending messages.
+- First real provider is selected and implemented, preferably email or webhook before QQ/WeChat.
+- Real provider tests avoid external sends unless credentials and a test recipient are explicitly supplied by a human.
+
+### Milestone 6: Background Run Model
+
+Status: designed.
+
+Goal: make the app practical to run continuously on Windows through a logged-in user-session tray process.
+
+Acceptance criteria:
+
+- The app can run as a long-lived background process with clean shutdown.
+- Logs include startup, capture failures, detection counts, notification results, and redacted errors.
+- A Windows tray process is implemented with Start, Pause, Resume, Capture once, Open logs, Open screenshots, and Exit controls.
+- Documentation explains how to start, stop, and inspect the process.
+
+### Milestone 7: Privacy, Reliability, And Packaging
+
+Status: planned.
+
+Goal: harden the app before real personal use.
+
+Acceptance criteria:
+
+- Screenshots are retained locally with count and age limits.
+- QR payload storage policy is explicit: store raw, hash, redact, or discard.
+- Notification credentials are never committed or written to artifacts.
+- Packaging output and generated files are documented.
+- Tests and manual validation cover normal operation, detector failures, notification failures, and restart behavior.
