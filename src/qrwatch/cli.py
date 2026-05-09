@@ -9,7 +9,12 @@ from typing import Sequence
 
 from qrwatch.app import QRWatchApp
 from qrwatch.capture import CaptureBackendUnavailable, CaptureError
-from qrwatch.config import ConfigError, load_config, parse_credential_sources
+from qrwatch.config import (
+    ConfigError,
+    load_config,
+    parse_credential_sources,
+    parse_dedup_window,
+)
 from qrwatch.detectors import DetectorBackendUnavailable, QRDetectionError
 
 
@@ -53,6 +58,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="mss monitor index to capture; use 1 for primary or 0 for all monitors.",
     )
+    parser.add_argument(
+        "--dedup-window",
+        help="Seconds to suppress repeated QR payload notifications.",
+    )
+    parser.add_argument(
+        "--state-path",
+        type=Path,
+        help="Path to the local JSON deduplication state file.",
+    )
     dry_run = parser.add_mutually_exclusive_group()
     dry_run.add_argument(
         "--dry-run",
@@ -84,6 +98,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 config,
                 credential_sources=parse_credential_sources(args.credential_sources),
             ).validated()
+        if args.dedup_window is not None:
+            config = replace(
+                config,
+                dedup_window_seconds=parse_dedup_window(args.dedup_window),
+            ).validated()
+        if args.state_path is not None:
+            config = replace(config, state_path=args.state_path).validated()
         if args.dry_run is not None:
             config = replace(config, dry_run=args.dry_run).validated()
 
@@ -126,6 +147,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             else "qr_detection=disabled"
         )
         print(f"qr_detections={summary.qr_detections_count}")
+        print(f"qr_events={summary.qr_events_count}")
+        print(f"notification_events={summary.notification_events_count}")
+        print(f"suppressed_events={summary.suppressed_events_count}")
     else:
         print("capture=disabled")
     print(f"notifications_sent={summary.notifications_sent}")

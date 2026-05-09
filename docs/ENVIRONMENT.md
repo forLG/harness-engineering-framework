@@ -62,6 +62,8 @@ No variables are required for the default dry-run startup. The current package s
 - `QRWATCH_DRY_RUN`: dry-run mode flag, such as `true` or `false`.
 - `QRWATCH_CREDENTIAL_SOURCES`: comma-separated credential source labels, such as `env` or `local-file`.
 - `QRWATCH_CONFIG_FILE`: optional dotenv-style local config file path.
+- `QRWATCH_DEDUP_WINDOW_SECONDS`: repeated QR payload suppression window, defaulting to 300 seconds.
+- `QRWATCH_STATE_PATH`: optional local JSON deduplication state path, defaulting to `%LOCALAPPDATA%\QRWatch\dedup-state.json`.
 
 Planned provider-specific variables should follow this pattern:
 

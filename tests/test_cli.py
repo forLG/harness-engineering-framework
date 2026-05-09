@@ -92,3 +92,27 @@ def test_cli_save_capture_prints_saved_path(monkeypatch, capsys):
     assert "capture=enabled" in output
     assert f"capture_saved={output_path}" in output
     assert "qr_detections=0" in output
+
+
+def test_cli_applies_deduplication_options(monkeypatch):
+    state_path = Path("artifacts/test-state/cli-state.json")
+
+    class FakeApp:
+        def __init__(self, config):
+            assert config.dedup_window_seconds == 42.0
+            assert config.state_path == state_path
+            self.config = config
+
+        def run_once(self):
+            from qrwatch.app import RunSummary
+
+            return RunSummary(
+                dry_run=True,
+                interval_seconds=self.config.interval_seconds,
+                notifier_provider=self.config.notifier_provider,
+                credential_sources=self.config.credential_sources,
+            )
+
+    monkeypatch.setattr("qrwatch.cli.QRWatchApp", FakeApp)
+
+    assert main(["--dedup-window", "42", "--state-path", str(state_path)]) == 0

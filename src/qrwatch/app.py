@@ -9,7 +9,9 @@ from pathlib import Path
 from qrwatch.capture import capture_screen, save_frame_png
 from qrwatch.config import AppConfig
 from qrwatch.detectors import detect_qr_codes
+from qrwatch.events import shape_detection_events
 from qrwatch.notifiers import create_notifier
+from qrwatch.state import JsonDeduplicationStore
 
 
 @dataclass(frozen=True)
@@ -28,15 +30,22 @@ class RunSummary:
     capture_saved_path: Path | None = None
     qr_detection_enabled: bool = False
     qr_detections_count: int = 0
+    qr_events_count: int = 0
+    notification_events_count: int = 0
+    suppressed_events_count: int = 0
     notifications_sent: int = 0
 
 
 class QRWatchApp:
     """Compose product layers without enabling continuous watcher behavior yet."""
 
-    def __init__(self, config: AppConfig) -> None:
+    def __init__(self, config: AppConfig, *, state_store=None) -> None:
         self.config = config
         self.notifier = create_notifier(config)
+        self.state_store = state_store or JsonDeduplicationStore(
+            config.state_path,
+            window_seconds=config.dedup_window_seconds,
+        )
 
     def run_once(self) -> RunSummary:
         """Run the milestone-2 dry-run path."""
@@ -59,6 +68,8 @@ class QRWatchApp:
 
         frame = capture_screen(monitor_index=monitor_index)
         detections = detect_qr_codes(frame.pixels, source=frame.source)
+        events = shape_detection_events(detections, detected_at=frame.captured_at)
+        deduplication = self.state_store.filter_events(events)
         saved_path = save_frame_png(frame, save_path) if save_path is not None else None
         return RunSummary(
             dry_run=self.config.dry_run,
@@ -73,4 +84,7 @@ class QRWatchApp:
             capture_saved_path=saved_path,
             qr_detection_enabled=True,
             qr_detections_count=len(detections),
+            qr_events_count=len(events),
+            notification_events_count=len(deduplication.notification_events),
+            suppressed_events_count=len(deduplication.suppressed_events),
         )

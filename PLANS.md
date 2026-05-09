@@ -48,7 +48,7 @@ Acceptance criteria:
 
 ### Milestone 4: Deduplication And Events
 
-Status: planned.
+Status: implemented.
 
 Goal: convert raw QR detections into notification-ready events without repeated spam.
 

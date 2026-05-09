@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Mapping
 
@@ -13,12 +13,15 @@ from dotenv import dotenv_values
 DEFAULT_INTERVAL_SECONDS = 30.0
 DEFAULT_NOTIFIER_PROVIDER = "dry-run"
 DEFAULT_CREDENTIAL_SOURCES = ("env",)
+DEFAULT_DEDUP_WINDOW_SECONDS = 300.0
 
 ENV_CONFIG_FILE = "QRWATCH_CONFIG_FILE"
 ENV_INTERVAL_SECONDS = "QRWATCH_INTERVAL_SECONDS"
 ENV_NOTIFIER_PROVIDER = "QRWATCH_NOTIFY_PROVIDER"
 ENV_DRY_RUN = "QRWATCH_DRY_RUN"
 ENV_CREDENTIAL_SOURCES = "QRWATCH_CREDENTIAL_SOURCES"
+ENV_DEDUP_WINDOW_SECONDS = "QRWATCH_DEDUP_WINDOW_SECONDS"
+ENV_STATE_PATH = "QRWATCH_STATE_PATH"
 
 
 class ConfigError(ValueError):
@@ -32,6 +35,8 @@ class AppConfig:
     dry_run: bool = True
     credential_sources: tuple[str, ...] = DEFAULT_CREDENTIAL_SOURCES
     config_path: Path | None = None
+    dedup_window_seconds: float = DEFAULT_DEDUP_WINDOW_SECONDS
+    state_path: Path = field(default_factory=lambda: default_state_path(os.environ))
 
     def validated(self) -> "AppConfig":
         if self.interval_seconds <= 0:
@@ -42,6 +47,8 @@ class AppConfig:
             raise ConfigError("at least one credential source is required")
         if any(not source.strip() for source in self.credential_sources):
             raise ConfigError("credential sources must not contain empty values")
+        if self.dedup_window_seconds <= 0:
+            raise ConfigError("deduplication window must be greater than zero seconds")
         return self
 
 
@@ -80,6 +87,8 @@ def load_config(
                 ENV_NOTIFIER_PROVIDER,
                 ENV_DRY_RUN,
                 ENV_CREDENTIAL_SOURCES,
+                ENV_DEDUP_WINDOW_SECONDS,
+                ENV_STATE_PATH,
             )
             if key in current_env
         }
@@ -97,6 +106,13 @@ def load_config(
             values.get(ENV_CREDENTIAL_SOURCES, ",".join(DEFAULT_CREDENTIAL_SOURCES))
         ),
         config_path=selected_path,
+        dedup_window_seconds=parse_dedup_window(
+            values.get(ENV_DEDUP_WINDOW_SECONDS, str(DEFAULT_DEDUP_WINDOW_SECONDS))
+        ),
+        state_path=Path(
+            values.get(ENV_STATE_PATH)
+            or str(default_state_path(current_env))
+        ),
     ).validated()
 
 
@@ -124,6 +140,23 @@ def parse_credential_sources(value: str) -> tuple[str, ...]:
     if not sources:
         raise ConfigError("at least one credential source is required")
     return sources
+
+
+def parse_dedup_window(value: str) -> float:
+    try:
+        window = float(value)
+    except ValueError as exc:
+        raise ConfigError("deduplication window must be a number of seconds") from exc
+    if window <= 0:
+        raise ConfigError("deduplication window must be greater than zero seconds")
+    return window
+
+
+def default_state_path(env: Mapping[str, str] | None = None) -> Path:
+    current_env = os.environ if env is None else env
+    if current_env.get("LOCALAPPDATA"):
+        return Path(current_env["LOCALAPPDATA"]) / "QRWatch" / "dedup-state.json"
+    return Path.home() / "AppData" / "Local" / "QRWatch" / "dedup-state.json"
 
 
 def _resolve_config_path(

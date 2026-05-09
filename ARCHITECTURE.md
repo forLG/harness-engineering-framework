@@ -4,7 +4,7 @@ Status: applied first pass.
 
 This repository is a Codex harness for a planned Windows Python app. The app will run in the background, periodically capture screenshots from the logged-in Windows desktop, detect QR codes in those screenshots, and notify a configured channel through a provider interface.
 
-The first application source skeleton exists under `src/qrwatch/`. It currently supports configuration loading, a dry-run entrypoint, mss-backed capture-once screen inspection, and OpenCV-backed QR detection. Deduplication and notification providers remain planned follow-up milestones.
+The first application source skeleton exists under `src/qrwatch/`. It currently supports configuration loading, a dry-run entrypoint, mss-backed capture-once screen inspection, OpenCV-backed QR detection, and JSON-backed deduplication events. Notification providers remain planned follow-up milestones.
 
 ## Product Shape
 
@@ -26,12 +26,13 @@ Intended source layout:
 - `src/qrwatch/config.py`: environment and config-file loading.
 - `src/qrwatch/capture.py`: Windows screenshot capture abstraction.
 - `src/qrwatch/detectors/`: QR detection implementation.
+- `src/qrwatch/events.py`: QR detection event shaping.
 - `src/qrwatch/notifiers/`: notifier interface plus email, QQ, WeChat, or webhook adapters.
 - `src/qrwatch/state.py`: deduplication state and local persistence.
 - `src/qrwatch/logging.py`: log configuration and redaction helpers.
 - `tests/`: unit tests and small image fixtures.
 
-This layout was confirmed when the milestone-2 package skeleton was added. Capture and detector modules now contain first implementations; notifier and state modules still contain placeholders until their implementation milestones.
+This layout was confirmed when the milestone-2 package skeleton was added. Capture, detector, event shaping, and state modules now contain first implementations; notifier modules still contain placeholders until their implementation milestone.
 
 ## Dependency Boundaries
 
@@ -104,7 +105,8 @@ Harness records:
 Product records:
 
 - App config: optional dotenv-style local config file plus `QRWATCH_*` environment variables. Environment variables override file values.
-- Deduplication state: TODO: choose a local JSON or SQLite store.
+- Deduplication state: JSON store at the configured state path, defaulting to `%LOCALAPPDATA%\QRWatch\dedup-state.json`.
+- QR payload persistence: deduplication state stores SHA-256 payload hashes and timestamps, not raw QR payloads.
 - Logs: TODO: choose a local log path and retention policy.
 - Screenshots: store local recent, detection, and error screenshots with retention under `%LOCALAPPDATA%\QRWatch\screenshots\`.
 
@@ -161,5 +163,5 @@ conda run -n qrwatch python -m qrwatch
 
 - Packaging and background-run model: scheduled task, tray process, service wrapper, or packaged executable.
 - First real notification provider.
-- Whether QR payloads should be stored, hashed, redacted, or discarded after notification.
+- Long-term QR payload retention after notification; current deduplication state stores only hashes.
 - App name. This document uses `qrwatch` as a working name.
