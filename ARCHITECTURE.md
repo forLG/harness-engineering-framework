@@ -4,7 +4,7 @@ Status: applied first pass.
 
 This repository is a Codex harness for a planned Windows Python app. The app will run in the background, periodically capture screenshots from the logged-in Windows desktop, detect QR codes in those screenshots, and notify a configured channel through a provider interface.
 
-The first application source skeleton exists under `src/qrwatch/`. It currently supports configuration loading and a dry-run entrypoint only; real screenshot capture, QR detection, deduplication, and notification providers remain planned follow-up milestones.
+The first application source skeleton exists under `src/qrwatch/`. It currently supports configuration loading, a dry-run entrypoint, and mss-backed capture-once screen inspection. QR detection, deduplication, and notification providers remain planned follow-up milestones.
 
 ## Product Shape
 

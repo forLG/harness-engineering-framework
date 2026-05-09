@@ -1,4 +1,5 @@
 from qrwatch.cli import main
+from pathlib import Path
 
 
 def test_cli_starts_in_dry_run_mode(capsys):
@@ -10,3 +11,77 @@ def test_cli_starts_in_dry_run_mode(capsys):
     assert "provider=dry-run" in output
     assert "capture=disabled" in output
     assert "notifications_sent=0" in output
+
+
+def test_cli_capture_once_prints_frame_metadata(monkeypatch, capsys):
+    class FakeApp:
+        def __init__(self, config):
+            self.config = config
+
+        def capture_once(self, *, monitor_index, save_path=None):
+            from datetime import datetime, timezone
+
+            from qrwatch.app import RunSummary
+
+            assert monitor_index == 0
+            assert save_path is None
+            return RunSummary(
+                dry_run=True,
+                interval_seconds=self.config.interval_seconds,
+                notifier_provider=self.config.notifier_provider,
+                credential_sources=self.config.credential_sources,
+                capture_enabled=True,
+                capture_width=1920,
+                capture_height=1080,
+                capture_source="monitor:0",
+                captured_at=datetime(2026, 5, 9, tzinfo=timezone.utc),
+            )
+
+    monkeypatch.setattr("qrwatch.cli.QRWatchApp", FakeApp)
+
+    assert main(["--capture-once", "--monitor", "0"]) == 0
+
+    output = capsys.readouterr().out
+
+    assert "capture=enabled" in output
+    assert "capture_source=monitor:0" in output
+    assert "capture_size=1920x1080" in output
+    assert "captured_at=2026-05-09T00:00:00+00:00" in output
+    assert "notifications_sent=0" in output
+
+
+def test_cli_save_capture_prints_saved_path(monkeypatch, capsys):
+    output_path = Path("capture.png")
+
+    class FakeApp:
+        def __init__(self, config):
+            self.config = config
+
+        def capture_once(self, *, monitor_index, save_path=None):
+            from datetime import datetime, timezone
+
+            from qrwatch.app import RunSummary
+
+            assert monitor_index == 1
+            assert save_path == output_path
+            return RunSummary(
+                dry_run=True,
+                interval_seconds=self.config.interval_seconds,
+                notifier_provider=self.config.notifier_provider,
+                credential_sources=self.config.credential_sources,
+                capture_enabled=True,
+                capture_width=800,
+                capture_height=600,
+                capture_source="monitor:1",
+                captured_at=datetime(2026, 5, 9, tzinfo=timezone.utc),
+                capture_saved_path=output_path,
+            )
+
+    monkeypatch.setattr("qrwatch.cli.QRWatchApp", FakeApp)
+
+    assert main(["--save-capture", str(output_path)]) == 0
+
+    output = capsys.readouterr().out
+
+    assert "capture=enabled" in output
+    assert f"capture_saved={output_path}" in output

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Sequence
 
 from qrwatch.app import QRWatchApp
+from qrwatch.capture import CaptureBackendUnavailable, CaptureError
 from qrwatch.config import ConfigError, load_config, parse_credential_sources
 
 
@@ -33,6 +34,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--credential-sources",
         help="Comma-separated credential source names, such as env or local-file.",
+    )
+    parser.add_argument(
+        "--capture-once",
+        action="store_true",
+        help="Capture one screen frame and print metadata without saving it.",
+    )
+    parser.add_argument(
+        "--save-capture",
+        type=Path,
+        metavar="PATH",
+        help="Save one captured frame as a PNG at PATH; implies --capture-once.",
+    )
+    parser.add_argument(
+        "--monitor",
+        type=int,
+        default=1,
+        help="mss monitor index to capture; use 1 for primary or 0 for all monitors.",
     )
     dry_run = parser.add_mutually_exclusive_group()
     dry_run.add_argument(
@@ -68,8 +86,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.dry_run is not None:
             config = replace(config, dry_run=args.dry_run).validated()
 
-        summary = QRWatchApp(config).run_once()
+        app = QRWatchApp(config)
+        if args.capture_once or args.save_capture is not None:
+            summary = app.capture_once(
+                monitor_index=args.monitor,
+                save_path=args.save_capture,
+            )
+        else:
+            summary = app.run_once()
     except ConfigError as exc:
+        parser.error(str(exc))
+        return 2
+    except (CaptureBackendUnavailable, CaptureError) as exc:
         parser.error(str(exc))
         return 2
 
@@ -78,6 +106,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"provider={summary.notifier_provider}")
     print(f"interval_seconds={summary.interval_seconds:g}")
     print(f"credential_sources={','.join(summary.credential_sources)}")
-    print("capture=disabled")
+    if summary.capture_enabled:
+        print("capture=enabled")
+        print(f"capture_source={summary.capture_source}")
+        print(f"capture_size={summary.capture_width}x{summary.capture_height}")
+        if summary.captured_at is not None:
+            print(f"captured_at={summary.captured_at.isoformat()}")
+        if summary.capture_saved_path is not None:
+            print(f"capture_saved={summary.capture_saved_path}")
+    else:
+        print("capture=disabled")
     print(f"notifications_sent={summary.notifications_sent}")
     return 0
