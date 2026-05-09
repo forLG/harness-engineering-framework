@@ -22,7 +22,7 @@ Acceptance criteria:
 
 ### Milestone 2: Package Skeleton And CLI
 
-Status: planned.
+Status: implemented.
 
 Goal: create the first runnable Python package without implementing real screenshot or notification behavior yet.
 

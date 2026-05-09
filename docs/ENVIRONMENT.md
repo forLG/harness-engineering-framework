@@ -4,7 +4,7 @@ Status: applied.
 
 This repository is being adapted for a Windows background Python app that periodically screenshots the active desktop, detects QR codes, and sends a notification through a pluggable channel such as email, QQ, WeChat, or another provider.
 
-The app source tree does not exist yet. Environment facts below were established on 2026-05-09 by creating the `qrwatch` Conda environment and installing the starter package set.
+The app source skeleton now exists under `src/qrwatch/`. Environment facts below were established on 2026-05-09 by creating the `qrwatch` Conda environment and installing the starter package set.
 
 ## Platform
 
@@ -55,12 +55,16 @@ The environment already exists on this workstation as `qrwatch`.
 
 ## Environment Variables
 
-No variables are required yet because the app is not implemented.
-
-Planned variables should follow this pattern:
+No variables are required for the default dry-run startup. The current package skeleton recognizes:
 
 - `QRWATCH_INTERVAL_SECONDS`: screenshot interval.
-- `QRWATCH_NOTIFY_PROVIDER`: selected notifier, such as `email`, `qq`, `wechat`, or `webhook`.
+- `QRWATCH_NOTIFY_PROVIDER`: selected notifier, such as `dry-run`, `email`, `qq`, `wechat`, or `webhook`.
+- `QRWATCH_DRY_RUN`: dry-run mode flag, such as `true` or `false`.
+- `QRWATCH_CREDENTIAL_SOURCES`: comma-separated credential source labels, such as `env` or `local-file`.
+- `QRWATCH_CONFIG_FILE`: optional dotenv-style local config file path.
+
+Planned provider-specific variables should follow this pattern:
+
 - `QRWATCH_SMTP_HOST`, `QRWATCH_SMTP_PORT`, `QRWATCH_SMTP_USERNAME`, `QRWATCH_SMTP_PASSWORD`, `QRWATCH_NOTIFY_TO`: email notifier settings.
 - `QRWATCH_WEBHOOK_URL`: webhook-style provider endpoint, if added.
 
@@ -80,7 +84,13 @@ Environment import smoke test:
 conda run -n qrwatch python -c "import cv2, mss, PIL, numpy, dotenv, requests, pytest, pystray; print('python ok'); print(cv2.__version__)"
 ```
 
-Application test command after source files exist:
+Application dry-run entrypoint:
+
+```bash
+conda run -n qrwatch python -m qrwatch
+```
+
+Application test command:
 
 ```bash
 conda run -n qrwatch python -m pytest

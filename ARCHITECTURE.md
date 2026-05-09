@@ -4,7 +4,7 @@ Status: applied first pass.
 
 This repository is a Codex harness for a planned Windows Python app. The app will run in the background, periodically capture screenshots from the logged-in Windows desktop, detect QR codes in those screenshots, and notify a configured channel through a provider interface.
 
-No application source files or dependency manifests exist yet. Product architecture below is therefore the intended first implementation, based on the project request dated 2026-05-09.
+The first application source skeleton exists under `src/qrwatch/`. It currently supports configuration loading and a dry-run entrypoint only; real screenshot capture, QR detection, deduplication, and notification providers remain planned follow-up milestones.
 
 ## Product Shape
 
@@ -31,7 +31,7 @@ Intended source layout:
 - `src/qrwatch/logging.py`: log configuration and redaction helpers.
 - `tests/`: unit tests and small image fixtures.
 
-TODO: confirm this layout when the first code is added.
+This layout was confirmed when the milestone-2 package skeleton was added. The capture, detector, notifier, and state modules contain placeholders until their implementation milestones.
 
 ## Dependency Boundaries
 
@@ -57,7 +57,7 @@ Generated files:
 Contract files:
 
 - `runtime/tasks/TASK_SCHEMA.md` is the harness task contract.
-- TODO: define app config schema once configuration files are implemented.
+- App config is currently loaded from optional dotenv-style config files and `QRWATCH_*` environment variables in `src/qrwatch/config.py`.
 
 ## Runtime Core
 
@@ -103,7 +103,7 @@ Harness records:
 
 Product records:
 
-- App config: TODO: choose environment variables, local config file, or both.
+- App config: optional dotenv-style local config file plus `QRWATCH_*` environment variables. Environment variables override file values.
 - Deduplication state: TODO: choose a local JSON or SQLite store.
 - Logs: TODO: choose a local log path and retention policy.
 - Screenshots: store local recent, detection, and error screenshots with retention under `%LOCALAPPDATA%\QRWatch\screenshots\`.
@@ -145,10 +145,16 @@ Planned app validation:
 - Dry-run notification tests that do not contact external services.
 - Optional Windows manual validation for background capture behavior.
 
-Primary test command after source files exist:
+Primary test command:
 
 ```bash
 conda run -n qrwatch python -m pytest
+```
+
+Dry-run module entrypoint:
+
+```bash
+conda run -n qrwatch python -m qrwatch
 ```
 
 ## Open Decisions
