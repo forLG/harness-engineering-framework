@@ -35,13 +35,13 @@ Acceptance criteria:
 
 ### Milestone 3: Screenshot Capture And QR Detection
 
-Status: in progress. Screenshot capture is implemented; QR detection is pending.
+Status: implemented.
 
 Goal: prove local screenshot capture and QR detection in the logged-in Windows desktop session.
 
 Acceptance criteria:
 
-- Screenshot capture uses `mss` behind `src/qrwatch/capture.py`. Implemented.
+- Screenshot capture uses `mss` behind `src/qrwatch/capture.py`.
 - QR detection uses OpenCV behind `src/qrwatch/detectors/`.
 - Static fixture tests cover at least one QR-positive and one QR-negative image.
 - A manual smoke command can inspect the current screen without saving screenshots by default.

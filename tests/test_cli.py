@@ -35,6 +35,8 @@ def test_cli_capture_once_prints_frame_metadata(monkeypatch, capsys):
                 capture_height=1080,
                 capture_source="monitor:0",
                 captured_at=datetime(2026, 5, 9, tzinfo=timezone.utc),
+                qr_detection_enabled=True,
+                qr_detections_count=2,
             )
 
     monkeypatch.setattr("qrwatch.cli.QRWatchApp", FakeApp)
@@ -47,6 +49,8 @@ def test_cli_capture_once_prints_frame_metadata(monkeypatch, capsys):
     assert "capture_source=monitor:0" in output
     assert "capture_size=1920x1080" in output
     assert "captured_at=2026-05-09T00:00:00+00:00" in output
+    assert "qr_detection=enabled" in output
+    assert "qr_detections=2" in output
     assert "notifications_sent=0" in output
 
 
@@ -75,6 +79,8 @@ def test_cli_save_capture_prints_saved_path(monkeypatch, capsys):
                 capture_source="monitor:1",
                 captured_at=datetime(2026, 5, 9, tzinfo=timezone.utc),
                 capture_saved_path=output_path,
+                qr_detection_enabled=True,
+                qr_detections_count=0,
             )
 
     monkeypatch.setattr("qrwatch.cli.QRWatchApp", FakeApp)
@@ -85,3 +91,4 @@ def test_cli_save_capture_prints_saved_path(monkeypatch, capsys):
 
     assert "capture=enabled" in output
     assert f"capture_saved={output_path}" in output
+    assert "qr_detections=0" in output

@@ -10,6 +10,7 @@ from typing import Sequence
 from qrwatch.app import QRWatchApp
 from qrwatch.capture import CaptureBackendUnavailable, CaptureError
 from qrwatch.config import ConfigError, load_config, parse_credential_sources
+from qrwatch.detectors import DetectorBackendUnavailable, QRDetectionError
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -97,7 +98,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ConfigError as exc:
         parser.error(str(exc))
         return 2
-    except (CaptureBackendUnavailable, CaptureError) as exc:
+    except (
+        CaptureBackendUnavailable,
+        CaptureError,
+        DetectorBackendUnavailable,
+        QRDetectionError,
+    ) as exc:
         parser.error(str(exc))
         return 2
 
@@ -114,6 +120,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"captured_at={summary.captured_at.isoformat()}")
         if summary.capture_saved_path is not None:
             print(f"capture_saved={summary.capture_saved_path}")
+        print(
+            "qr_detection=enabled"
+            if summary.qr_detection_enabled
+            else "qr_detection=disabled"
+        )
+        print(f"qr_detections={summary.qr_detections_count}")
     else:
         print("capture=disabled")
     print(f"notifications_sent={summary.notifications_sent}")

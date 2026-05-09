@@ -8,6 +8,7 @@ from pathlib import Path
 
 from qrwatch.capture import capture_screen, save_frame_png
 from qrwatch.config import AppConfig
+from qrwatch.detectors import detect_qr_codes
 from qrwatch.notifiers import create_notifier
 
 
@@ -25,6 +26,8 @@ class RunSummary:
     capture_source: str | None = None
     captured_at: datetime | None = None
     capture_saved_path: Path | None = None
+    qr_detection_enabled: bool = False
+    qr_detections_count: int = 0
     notifications_sent: int = 0
 
 
@@ -55,6 +58,7 @@ class QRWatchApp:
         """Capture one screen frame without saving it or sending notifications."""
 
         frame = capture_screen(monitor_index=monitor_index)
+        detections = detect_qr_codes(frame.pixels, source=frame.source)
         saved_path = save_frame_png(frame, save_path) if save_path is not None else None
         return RunSummary(
             dry_run=self.config.dry_run,
@@ -67,4 +71,6 @@ class QRWatchApp:
             capture_source=frame.source,
             captured_at=frame.captured_at,
             capture_saved_path=saved_path,
+            qr_detection_enabled=True,
+            qr_detections_count=len(detections),
         )
