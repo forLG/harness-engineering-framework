@@ -45,10 +45,14 @@ raw QR payloads is a policy change that requires human approval.
 - Repository `artifacts/screenshots/` is only for explicit validation evidence.
 - Do not upload, commit, or share screenshots automatically.
 - Before preserving screenshot evidence in the repository, review or redact sensitive content.
+- Delete screenshots and logs only through documented retention behavior or explicit user action.
 
-## Git Automation
+## Git Safety
 
-The harness loop may create local commits only when auto-commit is explicitly enabled and the worktree is clean before the run starts. The loop must not push, merge, tag, or rewrite history without human approval.
+Commits should use the functional prefixes listed in `AGENTS.md` and
+`docs/GUARDRAILS.md`. Do not commit credentials, screenshots, raw QR payloads,
+runtime logs, or generated packaging output. Pushing, merging, tagging, and
+history rewriting require explicit human approval.
 
 ## Human Escalation
 

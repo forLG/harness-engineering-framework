@@ -61,34 +61,14 @@ Generated files:
 - PyInstaller output is generated only by the local packaging command and stays
   under ignored `dist/` and `build/` folders.
 
-Contract files:
+Runtime contracts:
 
-- `runtime/tasks/TASK_SCHEMA.md` is the harness task contract.
 - App config is loaded from optional dotenv-style config files and `QRWATCH_*` environment variables in `src/qrwatch/config.py`. Packaged runs default to `%LOCALAPPDATA%\QRWatch\config.env` and create a dry-run starter config if it is missing.
 - The implemented real notifier is SMTP email. `qq-mail`, `qqmail`, and `email` map to the same SMTP adapter.
-
-## Runtime Core
-
-The harness runtime provides:
-
-- Task intake and normalization through `runtime/tasks/queue/*.json`.
-- Tool execution with explicit permissions.
-- File-based state persistence for task progress, decisions, and artifacts.
-- Stop conditions, retry rules, and failure classification.
-- Isolated local runs, tests, and validation commands.
-
-The product runtime is separate from the harness runtime. The product app will own the screenshot loop, QR detection, notification dispatch, and app logs.
+- Product runtime commands, state locations, and stop conditions are documented in `docs/RUNTIME.md`.
+- Test and reproduction commands are documented in `docs/EVALUATION.md`.
 
 ## Extension Points
-
-Harness extension points:
-
-- Tool adapters.
-- Repository knowledge indexers.
-- Evaluation runners.
-- Observability collectors.
-- Policy and guardrail checks.
-- Reviewer or maintenance agents.
 
 Product extension points:
 
@@ -100,15 +80,6 @@ Product extension points:
 
 ## State Model
 
-Harness records:
-
-- Task request: `runtime/tasks/queue/*.json`.
-- Plan and progress: `docs/exec-plans/active/`, task status directories under `runtime/tasks/`, and `artifacts/runs/<run-id>/summary.json`.
-- Tool calls and outputs: role outputs under `artifacts/runs/<run-id>/`.
-- Artifacts: `artifacts/`.
-- Eval results: `evals/results/`.
-- Human approvals and escalation history: task status, role JSON output, and preserved run artifacts.
-
 Product records:
 
 - App config: optional dotenv-style local config file plus `QRWATCH_*` environment variables. Environment variables override file values.
@@ -119,10 +90,9 @@ Product records:
 
 ## Isolation Model
 
-- Worktrees or task branches: current scaffold runs in the active repository. Future task branches are optional.
 - Local services and ports: no local service or port is required for the first prototype.
 - Credentials and secrets: notification credentials must be supplied by a human and excluded from Git.
-- Runtime artifacts: harness artifacts are stored under `artifacts/`.
+- Runtime artifacts: real product logs, state, and screenshots live under `%LOCALAPPDATA%\QRWatch\` by default. Repository `artifacts/` is only for explicit, reviewed validation evidence.
 - Production or external systems: notification providers are external systems. Sending real messages requires human-supplied credentials, `QRWATCH_DRY_RUN=false`, and a test recipient.
 
 ## Security And Privacy Rules
@@ -135,49 +105,10 @@ Product records:
 
 ## Validation Matrix
 
-Current harness validation:
-
-```bash
-python tools/validate_harness_structure.py
-```
-
-Current environment validation:
-
-```bash
-conda run -n qrwatch python -c "import cv2, mss, PIL, numpy, dotenv, requests, pytest; print('python ok'); print(cv2.__version__)"
-```
-
-Planned app validation:
-
-- Unit tests for config loading, deduplication, QR event shaping, and notifier interface behavior.
-- Fixture-based QR detection tests using static test images.
-- Dry-run notification tests that do not contact external services.
-- QQ Mail-compatible SMTP notification tests use fake SMTP clients and do not contact external services.
-- Optional Windows manual validation for background capture behavior.
-
-Primary test command:
-
-```bash
-conda run -n qrwatch python -m pytest
-```
-
-Dry-run module entrypoint:
-
-```bash
-conda run -n qrwatch python -m qrwatch
-```
-
-Continuous background loop:
-
-```bash
-conda run -n qrwatch python -m qrwatch --run
-```
-
-Tray process:
-
-```bash
-conda run -n qrwatch python -m qrwatch --tray
-```
+Architecture-sensitive changes should be validated through the commands and
+manual checks in `docs/EVALUATION.md`. At minimum, product-layer changes need
+unit tests for their layer and boundary-sensitive changes need harness structure
+validation.
 
 ## Open Decisions
 

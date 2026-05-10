@@ -24,4 +24,3 @@ Use UTC for persisted deduplication timestamps in the JSON state file.
 This keeps duplicate suppression stable if the system time zone changes, and it
 avoids ambiguous comparisons around daylight-saving transitions. Raw QR payloads
 are not stored in this state; only payload hashes and timestamps are persisted.
-

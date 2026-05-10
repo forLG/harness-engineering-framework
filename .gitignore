@@ -60,6 +60,7 @@ artifacts/**
 !artifacts/
 !artifacts/**/
 !artifacts/**/.gitkeep
+!artifacts/README.md
 
 # Eval results can be large and machine-specific; benchmark definitions stay tracked.
 evals/results/**

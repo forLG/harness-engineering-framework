@@ -2,7 +2,7 @@
 
 Status: implemented.
 
-This project uses a small controlled vocabulary for lifecycle state, project placeholders, and framework work. The goal is to make docs easy for humans to read and easy for maintenance tools to check.
+This project uses a small controlled vocabulary for lifecycle state, project placeholders, and framework work. The goal is to make docs easy for humans and agents to read.
 
 ## Status
 
@@ -35,20 +35,16 @@ Place the placeholder exactly where the future project fact belongs:
 - `PROJECT_PLACEHOLDER(ports): list local service ports, conflict policy, and reserved ranges.`
 ```
 
-`PROJECT_PLACEHOLDER(...)` is intentional scaffold content and should not be treated as entropy debt.
-
-Entropy control records these entries in the intentional placeholder inventory so adopters can see what remains to fill when the framework is applied to a real project. The inventory does not affect quality score, report status, or queued cleanup tasks.
+`PROJECT_PLACEHOLDER(...)` is intentional scaffold content. Replace it with project-specific facts when those facts become known.
 
 ## Framework Work
 
 Use `FRAMEWORK_TODO(<key>): <work to do>` for known work on the harness framework itself.
 
-Prefer placing framework work in `PLANS.md`, `docs/exec-plans/active/`, or `runtime/tasks/queue/`. Use inline `FRAMEWORK_TODO(...)` only when the note must stay next to the affected rule or behavior.
-
-Entropy control records `FRAMEWORK_TODO(...)` entries in the same intentional placeholder inventory. They are visible for planning but are not queued automatically.
+Prefer placing framework work in `PLANS.md` or `docs/exec-plans/active/`. Use inline `FRAMEWORK_TODO(...)` only when the note must stay next to the affected rule or behavior.
 
 ## Legacy Words
 
-Avoid bare `TODO`, `TBD`, `Status: placeholder`, and `Fill later` in docs. These are legacy placeholder markers and entropy control treats them as cleanup findings.
+Avoid bare `TODO`, `TBD`, `Status: placeholder`, and `Fill later` in docs. Use `PROJECT_PLACEHOLDER(...)` or `FRAMEWORK_TODO(...)` so future cleanup is intentional.
 
 Completed execution plans may describe historical cleanup work, but active docs should use the controlled vocabulary above.

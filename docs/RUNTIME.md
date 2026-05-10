@@ -2,7 +2,7 @@
 
 Status: applied.
 
-This document defines both the QR Watch product runtime and the Codex harness runtime. QR Watch is a Windows Python background app controlled by a small system tray UI.
+This document defines the QR Watch product runtime. QR Watch is a Windows Python background app controlled by a small system tray UI.
 
 ## Product Run Model
 
@@ -74,6 +74,21 @@ The worker loop owns app behavior:
 
 Default interval: 30 seconds. The user can decrease it for development or increase it after reliability and storage behavior are proven.
 
+## Failure Handling
+
+QR Watch should keep the tray responsive through ordinary capture, detection,
+storage, and notification failures.
+
+- Configuration failure: show an error status and do not start monitoring when required values are invalid or real-provider credentials are missing.
+- Capture failure: log the failure and retry on the next scheduled cycle. Mark status `degraded` after 3 consecutive capture failures and `error` after 10.
+- Detection failure: log the failure and continue with the next scheduled screenshot. Do not repeatedly retry the same frame in the hot loop.
+- Notification failure: retry transient provider or network failures up to 3 attempts with short backoff. Do not retry invalid credentials or permanent provider rejection without user action.
+- Storage failure: retry once after creating missing directories. If screenshot storage fails, continue monitoring but mark status `degraded`; if logging fails, surface errors through console or tray status when possible.
+- Policy failure: stop and require human approval for credentials, real external sends, destructive actions, storing raw QR payloads, or unclear privacy decisions.
+
+In dry-run mode, notification failures should be limited to logging or storage
+errors because no external provider is contacted.
+
 ## Runtime State
 
 Real app runs should write local runtime state outside the Git repository:
@@ -84,7 +99,8 @@ Real app runs should write local runtime state outside the Git repository:
 - State: `%LOCALAPPDATA%\QRWatch\dedup-state.json`
 - Config: `%LOCALAPPDATA%\QRWatch\config.env` for packaged runs, `--config PATH`, `QRWATCH_CONFIG_FILE`, or repository-local ignored config files during development.
 
-Repository `artifacts/` directories remain harness evidence buckets. Do not use them as the default product runtime store.
+Repository `artifacts/` is for ignored test output and explicit reviewed
+validation evidence. Do not use it as the default product runtime store.
 
 ## Configuration
 
@@ -113,62 +129,27 @@ QR payloads are stored in deduplication state as SHA-256 hashes only. Raw
 payloads may exist in memory while shaping events and sending a notification,
 but they are not written to the JSON state file or dry-run logs.
 
+Default deduplication window: 10 minutes. QR Watch normalizes each payload
+before comparison, suppresses repeated notifications during the window, and logs
+suppressed duplicates with safe metadata.
+
+State writes should be atomic: write a temporary file, flush it, then replace
+the previous state file. If deduplication state is corrupt, move it aside with a
+timestamp, start with empty state, and log the recovery event.
+
 Automatic screenshot retention is disabled by default. If
 `QRWATCH_SAVE_SCREENSHOTS=true`, QR Watch writes PNG files under
 `QRWATCH_SCREENSHOT_DIR` and prunes them by both `QRWATCH_SCREENSHOT_MAX_COUNT`
 and `QRWATCH_SCREENSHOT_MAX_AGE_DAYS` at startup and after retained saves.
 Explicit `--save-capture PATH` one-shot captures still write only to the
-requested path.
+requested path. Retention cleanup failures should log a warning but should not
+stop monitoring.
 
 Generated packaging output is not part of the default runtime. The tracked
 PyInstaller spec is `packaging/qrwatch.spec`, the local build wrapper is
 `tools/build_windows_executable.ps1`, and generated output stays under ignored
 `dist/` and `build/` folders. See `docs/PACKAGING.md` for build and executable
 validation details.
-
-## Harness Invocation Modes
-
-- Human-supervised interactive runs: `codex -C <project>`.
-- Harness task loop preview: `python tools/harness_loop.py --once`.
-- Harness task loop execution: `python tools/harness_loop.py --once --execute`.
-- Harness smoke evals: `python tools/run_evals.py --suite smoke`.
-- Entropy report: `python tools/entropy_control.py --report`.
-
-When `--execute` is used, the supervisor invokes role agents with `codex exec --full-auto -C <repo> ...`. The supervisor writes role prompts, role outputs, and summaries under `artifacts/runs/<run-id>/`.
-
-## Harness State And Artifacts
-
-- Task queue: `runtime/tasks/queue/`
-- Active tasks: `runtime/tasks/active/`
-- Completed tasks: `runtime/tasks/completed/`
-- Blocked tasks: `runtime/tasks/blocked/`
-- Run artifacts: `artifacts/runs/`
-- Review artifacts: `artifacts/reviews/`
-- Validation artifacts: `artifacts/validation/`
-- Harness logs: `artifacts/logs/`
-- Harness traces: `artifacts/traces/`
-- Harness screenshots: `artifacts/screenshots/`
-- Eval results: `evals/results/`
-
-## Validation Commands
-
-Harness structure:
-
-```bash
-python tools/validate_harness_structure.py
-```
-
-Environment smoke test:
-
-```bash
-conda run -n qrwatch python -c "import cv2, mss, PIL, numpy, dotenv, requests, pytest, pystray; print('python ok'); print(cv2.__version__)"
-```
-
-Product tests after source exists:
-
-```bash
-conda run -n qrwatch python -m pytest
-```
 
 ## Stop Conditions
 
@@ -179,8 +160,9 @@ Product runtime:
 - Degraded: screenshot capture, QR detection, or notification fails but the app can keep running after logging the failure.
 - Error: repeated failures exceed the configured threshold or credentials/config are invalid.
 
-Harness runtime:
+Startup should validate config, create required local directories, run
+screenshot retention cleanup, and then start paused or running according to
+config. Shutdown should stop accepting new tray actions, let the current cycle
+finish or time out, flush logs and state, and exit the tray icon cleanly.
 
-- Success: validator returns `passed` and reviewer returns `approved`.
-- Follow-up: validator returns `failed` or reviewer returns `needs_followup`.
-- Blocked: required human input, credentials, external sends, or policy decisions are needed.
+Validation and reproduction commands live in `docs/EVALUATION.md`.

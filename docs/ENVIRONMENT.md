@@ -100,9 +100,9 @@ Planned provider-specific variables should follow this pattern:
 
 Secrets must not be printed in logs, preserved in artifacts, or included in screenshots.
 
-## Reproducible Setup Command
+## Setup Checks
 
-Current safe validation command:
+Validate the harness structure after environment documentation changes:
 
 ```bash
 python tools/validate_harness_structure.py
@@ -120,34 +120,10 @@ Application dry-run entrypoint:
 conda run -n qrwatch python -m qrwatch
 ```
 
-Application one-shot capture:
-
-```bash
-conda run -n qrwatch python -m qrwatch --once
-```
-
-Application background loop:
-
-```bash
-conda run -n qrwatch python -m qrwatch --run
-```
-
-Application tray process:
-
-```bash
-conda run -n qrwatch python -m qrwatch --tray
-```
-
 Packaged Windows executable build:
 
 ```powershell
 .\tools\build_windows_executable.ps1
 ```
 
-The tracked PyInstaller spec is `packaging/qrwatch.spec`; output is generated under ignored `build/` and `dist/` directories. See `docs/PACKAGING.md` for executable runtime behavior and validation.
-
-Application test command:
-
-```bash
-conda run -n qrwatch python -m pytest
-```
+The tracked PyInstaller spec is `packaging/qrwatch.spec`; output is generated under ignored `build/` and `dist/` directories. See `docs/EVALUATION.md` for product reproduction and test commands, and `docs/PACKAGING.md` for executable runtime behavior and validation.

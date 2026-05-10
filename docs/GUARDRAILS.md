@@ -2,18 +2,20 @@
 
 Status: applied.
 
-Guardrails define rules that should become mechanical checks where practical. For QR Watch, the highest-risk areas are screenshots, QR payloads, notification credentials, and external message sends.
+Guardrails are rules that agents and humans should preserve while changing QR
+Watch. When a rule can be checked mechanically, prefer a script, lint rule, or
+test over prose.
 
 ## Structural Rules
 
 - Required files and directories are checked by `tools/validate_harness_structure.py`.
-- Task JSON schema, status-directory alignment, task id naming, and filename/id matching are checked by `tools/validate_guardrails.py`.
-- Entropy control findings are checked by `tools/entropy_control.py`.
-- The outer loop task state must live under `runtime/tasks/`.
-- Role definitions must live under `docs/agent-roles/`.
-- Run evidence must live under `artifacts/runs/`.
-- Maintenance evidence must live under `artifacts/maintenance/`.
-- `AGENTS.md` must stay under the validator size limit.
+- `AGENTS.md` must stay concise and point to focused docs instead of repeating them.
+- Product roadmap belongs in `PLANS.md`.
+- Product architecture and source boundaries belong in `ARCHITECTURE.md`.
+- Test and reproduction commands belong in `docs/EVALUATION.md`.
+- Runtime logs and evidence locations belong in `docs/OBSERVABILITY.md`.
+- Active execution plans belong in `docs/exec-plans/active/`; completed plans belong in `docs/exec-plans/completed/`.
+- Product-specific preferences and conventions belong in `docs/product-specs/`.
 
 ## Product Dependency Guardrails
 
@@ -34,8 +36,6 @@ Forbidden dependencies:
 - `notifiers` must not capture screenshots.
 - `tools/` should not import product runtime modules unless a specific validation command requires it.
 
-Mechanical check: planned after `src/qrwatch/` exists. First implementation can be a small import-boundary check in `tools/validate_qrwatch_boundaries.py`.
-
 ## Product Safety Guardrails
 
 - Do not commit notification credentials, mailbox passwords, QQ credentials, WeChat credentials, webhook URLs, provider cookies, or `.env` files.
@@ -43,60 +43,26 @@ Mechanical check: planned after `src/qrwatch/` exists. First implementation can 
 - Default notifier mode must be dry-run until a real provider is configured.
 - QR payloads should be hashed or redacted in persistent state and logs by default.
 - Screenshots may be stored locally under `%LOCALAPPDATA%\QRWatch\screenshots\` with retention, but must not be committed.
-- Repository `artifacts/screenshots/` may contain screenshots only when a task explicitly requires evidence and the user has reviewed or approved the content.
+- Repository `artifacts/` may contain logs or screenshots only when a task explicitly requires evidence and the user has reviewed or approved sensitive content.
+- Generated test output belongs under `artifacts/test-*`, not in the repository root.
 - Logs must redact secrets, tokens, webhook URLs, and raw QR payloads unless a debug setting explicitly allows payload logging.
 - Generated packaging output must be documented before agents edit or delete it.
-
-Mechanical checks available now:
-
-- `.gitignore` ignores `.env`, logs, runtime databases, and harness artifact contents by default.
-- `python tools/validate_harness_structure.py` validates harness paths and task guardrails.
-
-Planned checks:
-
-- Secret-pattern scanner for `.env`, webhook URLs, SMTP passwords, and common token names.
-- Screenshot artifact scanner that warns when image files are staged under repository artifacts.
-- QR payload logging test once logging code exists.
-- Dry-run default test once notifier code exists.
-
-## Changed-File Requirements
-
-- `AGENTS.md`, `ARCHITECTURE.md`, `PLANS.md`, or `docs/*.md`: run `python tools/validate_harness_structure.py`.
-- `environment.yml`: run the Conda import smoke test from `docs/ENVIRONMENT.md`.
-- `tools/*.py`: run `python tools/validate_harness_structure.py` and the relevant tool command.
-- Future `src/qrwatch/capture.py`: run screenshot capture smoke tests and avoid preserving screenshots unless needed.
-- Future `src/qrwatch/detectors/`: run QR fixture tests.
-- Future `src/qrwatch/notifiers/`: run dry-run notifier tests; real sends require human approval.
-- Future `src/qrwatch/state.py`: run deduplication and state-recovery tests.
-- Future tray UI code: run unit tests plus a manual tray smoke check on Windows.
 
 ## Tool Rules
 
 - Allowed tools: repository-local reads, edits, local validation commands, Conda environment checks, and artifact writes.
-- Conditionally allowed tools: local `git add --all .` and `git commit` after a successful harness loop run when auto-commit is explicitly enabled.
-- Restricted tools: production changes, credential access, destructive filesystem operations, external service mutation, automatic pushes, automatic merges.
-- Escalation-required tools: anything outside the local harness permission model or requiring secrets.
+- Restricted tools: production changes, credential access, destructive filesystem operations, external service mutation, automatic pushes, automatic merges, tags, and history rewrites.
+- Escalation-required tools: anything outside the local harness permission model or requiring secrets, real external sends, destructive actions, or ambiguous privacy decisions.
 
-## Git Commit Guardrails
+## Git Rules
 
-- Auto-commit requires a clean worktree before the task starts.
-- Auto-commit must run after validation and review, not before.
-- Auto-commit must not include remote mutation such as `git push`.
-- Auto-commit failures should leave evidence in the run output and require human follow-up.
-
-## Documentation Rules
-
-- `AGENTS.md` must remain concise.
-- Durable knowledge belongs in focused docs.
-- Active execution plans belong in `docs/exec-plans/active/`.
-- Role-specific behavior belongs in `docs/agent-roles/`, not in `AGENTS.md`.
-- Machine-readable task state belongs in JSON files under `runtime/tasks/`.
-- Product roadmap belongs in `PLANS.md`.
+- Use functional commit prefixes such as `docs:`, `feat:`, `fix:`, `test:`, `build:`, `security:`, or `chore:`.
+- Commit messages should describe the function of the change, not only the files touched.
+- Do not commit credentials, screenshots, raw QR payloads, runtime logs, or generated packaging output.
+- Pushing, merging, tagging, and history rewriting require explicit human approval.
 
 ## Future Checks
 
-- `tools/validate_qrwatch_boundaries.py`: planned dependency boundary check.
-- `tools/validate_qrwatch_security.py`: planned secret, screenshot artifact, and unsafe notifier config check.
-- Product smoke eval suite: planned after the package skeleton exists.
-- Stale documentation checker: available through `tools/entropy_control.py`.
-- Eval regression gate: available through `tools/run_evals.py`.
+- `tools/validate_qrwatch_boundaries.py`: dependency boundary check.
+- `tools/validate_qrwatch_security.py`: secret, screenshot artifact, and unsafe notifier config check.
+- Product smoke tests for capture, detection fixtures, deduplication, dry-run notifier behavior, and retention cleanup.

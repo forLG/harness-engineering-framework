@@ -9,7 +9,7 @@ QR Watch should be easy to debug after it has been running in the background. Ob
 Location:
 
 - Real runs: `%LOCALAPPDATA%\QRWatch\logs\`
-- Harness/debug evidence: `artifacts/logs/qrwatch/` only when a task needs preserved evidence.
+- Debug or test evidence: `artifacts/logs/` or `artifacts/test-logs/` only when a task needs local output or preserved evidence.
 
 Format:
 
@@ -36,7 +36,8 @@ Use `INFO` for lifecycle and normal cycle summaries, `DEBUG` for per-function ca
 Location:
 
 - Real runs: `%LOCALAPPDATA%\QRWatch\screenshots\`
-- Harness/debug evidence: `artifacts/screenshots/qrwatch/` only when explicitly preserved for a task.
+- Test screenshots: `artifacts/test-screenshots/`.
+- Reviewed debug evidence: `artifacts/` only when explicitly preserved for a task.
 
 Storage policy:
 
@@ -81,53 +82,9 @@ Maintain lightweight in-memory counters and write periodic summaries to logs:
 
 The tray status should use these counters to show a compact health summary.
 
-## Traces
+## Evidence Notes
 
-Location:
-
-- Real runs: `%LOCALAPPDATA%\QRWatch\traces\` if trace files are enabled.
-- Harness evidence: `artifacts/traces/qrwatch/` only when a task needs preserved evidence.
-
-Trace format:
-
-- One cycle trace may be a JSON object with `cycle_id`, timestamps, step durations, screenshot path, detection count, dedup result, notifier result, and final status.
-- Enable trace files only during debugging or tests; normal logs should be enough for daily use.
-
-## Review And Validation Evidence
-
-- Review artifact location: `artifacts/reviews/`
-- Validation artifact location: `artifacts/validation/`
-- Current supervisor writes reviewer and validator outputs to `artifacts/runs/<run-id>/`.
-
-Use standalone evidence directories only when evidence should be shared across runs or preserved separately from a single task run.
-
-## Local Reproduction
-
-Reproduce harness validation:
-
-```bash
-python tools/validate_harness_structure.py
-```
-
-Reproduce environment imports:
-
-```bash
-conda run -n qrwatch python -c "import cv2, mss, PIL, numpy, dotenv, requests, pytest, pystray; print('python ok'); print(cv2.__version__)"
-```
-
-Planned product reproduction commands:
-
-```bash
-conda run -n qrwatch python -m qrwatch --once --dry-run
-conda run -n qrwatch python -m qrwatch --run --dry-run
-conda run -n qrwatch python -m pytest
-```
-
-## Maintenance Artifacts
-
-- Location: `artifacts/maintenance/`
-- JSON report: `<timestamp>-entropy-control.json`
-- Markdown report: `<timestamp>-entropy-control.md`
-- Latest pointer: `latest-entropy-report.json`
-
-Entropy reports preserve the findings that led to cleanup tasks, quality score updates, or human escalation.
+Use this document to find runtime evidence: logs, screenshots, counters, and
+redacted failure context. Use `docs/EVALUATION.md` for reproduction commands,
+test commands, and manual validation checklists. Use `artifacts/README.md` for
+repository-local test output rules.
