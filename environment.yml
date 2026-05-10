@@ -13,3 +13,4 @@ dependencies:
       - requests==2.33.1
       - pytest==9.0.3
       - pystray==0.19.5
+      - pyinstaller==6.17.0

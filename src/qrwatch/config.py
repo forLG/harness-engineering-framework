@@ -22,6 +22,7 @@ DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_SAVE_SCREENSHOTS = False
 DEFAULT_SCREENSHOT_MAX_COUNT = 200
 DEFAULT_SCREENSHOT_MAX_AGE_DAYS = 1.0
+DEFAULT_CONFIG_FILENAME = "config.env"
 
 ENV_CONFIG_FILE = "QRWATCH_CONFIG_FILE"
 ENV_INTERVAL_SECONDS = "QRWATCH_INTERVAL_SECONDS"
@@ -45,6 +46,34 @@ ENV_SMTP_USE_SSL = "QRWATCH_SMTP_USE_SSL"
 ENV_SMTP_TIMEOUT_SECONDS = "QRWATCH_SMTP_TIMEOUT_SECONDS"
 ENV_NOTIFY_FROM = "QRWATCH_NOTIFY_FROM"
 ENV_NOTIFY_TO = "QRWATCH_NOTIFY_TO"
+
+STARTER_CONFIG_CONTENT = """QRWATCH_INTERVAL_SECONDS=30
+QRWATCH_MONITOR_INDEX=1
+QRWATCH_NOTIFY_PROVIDER=dry-run
+QRWATCH_DRY_RUN=true
+QRWATCH_CREDENTIAL_SOURCES=env
+QRWATCH_DEDUP_WINDOW_SECONDS=300
+QRWATCH_LOG_LEVEL=INFO
+QRWATCH_SAVE_SCREENSHOTS=false
+QRWATCH_SCREENSHOT_MAX_COUNT=200
+QRWATCH_SCREENSHOT_MAX_AGE_DAYS=1
+
+# Runtime files default to %LOCALAPPDATA%\\QRWatch.
+# Uncomment these only if you need custom locations.
+# QRWATCH_STATE_PATH=C:\\Users\\you\\AppData\\Local\\QRWatch\\dedup-state.json
+# QRWATCH_LOG_DIR=C:\\Users\\you\\AppData\\Local\\QRWatch\\logs
+# QRWATCH_SCREENSHOT_DIR=C:\\Users\\you\\AppData\\Local\\QRWatch\\screenshots
+
+# QQ Mail-compatible SMTP settings for live email sends.
+# Keep QRWATCH_DRY_RUN=true until credentials are supplied and verified.
+# QRWATCH_NOTIFY_PROVIDER=qq-mail
+# QRWATCH_DRY_RUN=false
+# QRWATCH_SMTP_HOST=smtp.qq.com
+# QRWATCH_SMTP_PORT=465
+# QRWATCH_SMTP_USERNAME=your-address@qq.com
+# QRWATCH_SMTP_PASSWORD=your-local-authorization-code
+# QRWATCH_NOTIFY_TO=receiver@example.com
+"""
 
 
 class ConfigError(ValueError):
@@ -121,6 +150,8 @@ def load_config(
     *,
     env: Mapping[str, str] | None = None,
     config_path: str | Path | None = None,
+    use_default_config_file: bool = False,
+    create_default_config: bool = False,
 ) -> AppConfig:
     """Load configuration from an optional dotenv file and environment variables.
 
@@ -130,12 +161,20 @@ def load_config(
     """
 
     current_env = os.environ if env is None else env
-    selected_path = _resolve_config_path(config_path, current_env)
+    selected_path = _resolve_config_path(
+        config_path,
+        current_env,
+        use_default_config_file=use_default_config_file,
+    )
+    explicit_config_path = config_path is not None or bool(current_env.get(ENV_CONFIG_FILE))
     values: dict[str, str] = {}
 
     if selected_path is not None:
         if not selected_path.exists():
-            raise ConfigError(f"config file does not exist: {selected_path}")
+            if create_default_config and not explicit_config_path:
+                write_starter_config(selected_path)
+            else:
+                raise ConfigError(f"config file does not exist: {selected_path}")
         values.update(
             {
                 key: value
@@ -318,6 +357,10 @@ def default_screenshot_dir(env: Mapping[str, str] | None = None) -> Path:
     return default_runtime_dir(env) / "screenshots"
 
 
+def default_config_path(env: Mapping[str, str] | None = None) -> Path:
+    return default_runtime_dir(env) / DEFAULT_CONFIG_FILENAME
+
+
 def default_runtime_dir(env: Mapping[str, str] | None = None) -> Path:
     current_env = os.environ if env is None else env
     if current_env.get("LOCALAPPDATA"):
@@ -325,12 +368,24 @@ def default_runtime_dir(env: Mapping[str, str] | None = None) -> Path:
     return Path.home() / "AppData" / "Local" / "QRWatch"
 
 
+def write_starter_config(path: str | Path) -> Path:
+    config_path = Path(path)
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    if not config_path.exists():
+        config_path.write_text(STARTER_CONFIG_CONTENT, encoding="utf-8")
+    return config_path
+
+
 def _resolve_config_path(
     config_path: str | Path | None,
     env: Mapping[str, str],
+    *,
+    use_default_config_file: bool = False,
 ) -> Path | None:
     if config_path is not None:
         return Path(config_path)
     if env.get(ENV_CONFIG_FILE):
         return Path(env[ENV_CONFIG_FILE])
+    if use_default_config_file:
+        return default_config_path(env)
     return None

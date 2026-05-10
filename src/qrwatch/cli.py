@@ -136,12 +136,24 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(
+    argv: Sequence[str] | None = None,
+    *,
+    use_default_config_file: bool = False,
+    create_default_config: bool = False,
+    default_tray: bool = False,
+) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if default_tray and not _has_explicit_mode(args):
+        args.tray = True
 
     try:
-        config = load_config(config_path=args.config)
+        config = load_config(
+            config_path=args.config,
+            use_default_config_file=use_default_config_file,
+            create_default_config=create_default_config,
+        )
         if args.interval is not None:
             config = replace(config, interval_seconds=args.interval).validated()
         if args.provider is not None:
@@ -259,3 +271,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"notifications_sent={summary.notifications_sent}")
     print(f"notifications_failed={summary.notifications_failed}")
     return 0
+
+
+def _has_explicit_mode(args: argparse.Namespace) -> bool:
+    return bool(
+        args.run
+        or args.tray
+        or args.capture_once
+        or args.save_capture is not None
+    )

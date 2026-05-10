@@ -26,6 +26,7 @@ conda run -n qrwatch python -m qrwatch --tray
 conda run -n qrwatch python -m qrwatch --run
 conda run -n qrwatch python -m qrwatch --once
 conda run -n qrwatch python -m qrwatch --dry-run
+.\dist\QRWatch\QRWatch.exe
 ```
 
 Expected behavior:
@@ -34,6 +35,7 @@ Expected behavior:
 - `--run`: run the background screenshot loop without tray UI until Ctrl+C, useful for debugging and scheduled runs.
 - `--once`: capture one frame, run QR detection and notification dispatch, then exit without saving screenshots unless `--save-capture PATH` is supplied.
 - `--dry-run`: never send external messages; log the notification event instead.
+- `.\dist\QRWatch\QRWatch.exe`: packaged launcher that starts the tray by default and uses `%LOCALAPPDATA%\QRWatch\config.env`.
 
 The older `--capture-once` flag remains as an alias for `--once`.
 
@@ -80,7 +82,7 @@ Real app runs should write local runtime state outside the Git repository:
 - Logs: `%LOCALAPPDATA%\QRWatch\logs\`
 - Screenshots: `%LOCALAPPDATA%\QRWatch\screenshots\`
 - State: `%LOCALAPPDATA%\QRWatch\dedup-state.json`
-- Config: `%LOCALAPPDATA%\QRWatch\config.env` or repository-local `.env` during development.
+- Config: `%LOCALAPPDATA%\QRWatch\config.env` for packaged runs, `--config PATH`, `QRWATCH_CONFIG_FILE`, or repository-local ignored config files during development.
 
 Repository `artifacts/` directories remain harness evidence buckets. Do not use them as the default product runtime store.
 
@@ -103,6 +105,8 @@ Planned environment variables:
 
 Provider-specific credentials stay in local env/config only and must never be committed.
 
+Packaged runs create `%LOCALAPPDATA%\QRWatch\config.env` when the default file is missing. The generated starter config enables dry-run mode, selects the dry-run provider, and contains no credentials. Changes to interval, monitor index, notifier provider, screenshot retention, or other config values are applied after the app is restarted.
+
 ## Privacy And Retention
 
 QR payloads are stored in deduplication state as SHA-256 hashes only. Raw
@@ -116,10 +120,11 @@ and `QRWATCH_SCREENSHOT_MAX_AGE_DAYS` at startup and after retained saves.
 Explicit `--save-capture PATH` one-shot captures still write only to the
 requested path.
 
-Generated packaging output is not part of the default runtime. Current commands
-run from the Python package; future executable or installer output should be
-documented before it is shared and kept under ignored build folders such as
-`dist/` or `build/`.
+Generated packaging output is not part of the default runtime. The tracked
+PyInstaller spec is `packaging/qrwatch.spec`, the local build wrapper is
+`tools/build_windows_executable.ps1`, and generated output stays under ignored
+`dist/` and `build/` folders. See `docs/PACKAGING.md` for build and executable
+validation details.
 
 ## Harness Invocation Modes
 

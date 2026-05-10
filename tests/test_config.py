@@ -83,6 +83,75 @@ def test_default_state_path_uses_local_app_data():
     assert config.screenshot_dir == local_app_data / "QRWatch" / "screenshots"
 
 
+def test_packaged_default_config_is_created_in_local_app_data():
+    local_app_data = Path("artifacts/test-localappdata/packaged-config-create")
+    config_path = local_app_data / "QRWatch" / "config.env"
+    if config_path.exists():
+        config_path.unlink()
+
+    config = load_config(
+        env={"LOCALAPPDATA": str(local_app_data)},
+        use_default_config_file=True,
+        create_default_config=True,
+    )
+
+    contents = config_path.read_text(encoding="utf-8")
+
+    assert config.config_path == config_path
+    assert config.dry_run is True
+    assert config.notifier_provider == "dry-run"
+    assert config.smtp_username is None
+    assert config.smtp_password is None
+    assert "QRWATCH_DRY_RUN=true" in contents
+
+
+def test_packaged_default_config_reads_existing_user_changes():
+    local_app_data = Path("artifacts/test-localappdata/packaged-config-existing")
+    config_path = local_app_data / "QRWatch" / "config.env"
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        "\n".join(
+            [
+                "QRWATCH_INTERVAL_SECONDS=45",
+                "QRWATCH_MONITOR_INDEX=0",
+                "QRWATCH_NOTIFY_PROVIDER=dry-run",
+                "QRWATCH_DRY_RUN=true",
+                "QRWATCH_SAVE_SCREENSHOTS=true",
+                "QRWATCH_SCREENSHOT_MAX_COUNT=5",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_config(
+        env={"LOCALAPPDATA": str(local_app_data)},
+        use_default_config_file=True,
+        create_default_config=True,
+    )
+
+    assert config.config_path == config_path
+    assert config.interval_seconds == 45.0
+    assert config.monitor_index == 0
+    assert config.save_screenshots is True
+    assert config.screenshot_max_count == 5
+
+
+def test_explicit_missing_config_path_is_not_auto_created():
+    missing_path = Path("artifacts/test-localappdata/missing-explicit.env")
+    if missing_path.exists():
+        missing_path.unlink()
+
+    with pytest.raises(ConfigError, match="config file does not exist"):
+        load_config(
+            config_path=missing_path,
+            env={},
+            use_default_config_file=True,
+            create_default_config=True,
+        )
+
+    assert not missing_path.exists()
+
+
 def test_env_overrides_config_file():
     config = load_config(
         env={"QRWATCH_INTERVAL_SECONDS": "10"},

@@ -9,7 +9,7 @@ from pathlib import Path
 
 from qrwatch.app import QRWatchApp
 from qrwatch.background import BackgroundController, STATUS_PAUSED, STATUS_RUNNING
-from qrwatch.config import AppConfig
+from qrwatch.config import AppConfig, default_config_path, write_starter_config
 from qrwatch.logging import configure_logging
 
 
@@ -52,6 +52,11 @@ def run_tray(config: AppConfig, *, monitor_index: int | None = None) -> int:
     def open_screenshots(icon, item):
         open_directory(controller.folders.screenshot_dir)
 
+    def open_settings(icon, item):
+        settings_path = config.config_path or default_config_path()
+        write_starter_config(settings_path)
+        open_file(settings_path)
+
     def exit_app(icon, item):
         controller.stop()
         icon.stop()
@@ -81,6 +86,7 @@ def run_tray(config: AppConfig, *, monitor_index: int | None = None) -> int:
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Open logs", open_logs),
         pystray.MenuItem("Open screenshots", open_screenshots),
+        pystray.MenuItem("Open settings file", open_settings),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Exit", exit_app),
     )
@@ -103,6 +109,18 @@ def open_directory(path: str | Path) -> None:
         os.startfile(str(directory))  # type: ignore[attr-defined]
         return
     command = ["open", str(directory)] if sys.platform == "darwin" else ["xdg-open", str(directory)]
+    subprocess.Popen(command)
+
+
+def open_file(path: str | Path) -> None:
+    """Open a local file in the platform default editor."""
+
+    file_path = Path(path)
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    if hasattr(os, "startfile"):
+        os.startfile(str(file_path))  # type: ignore[attr-defined]
+        return
+    command = ["open", str(file_path)] if sys.platform == "darwin" else ["xdg-open", str(file_path)]
     subprocess.Popen(command)
 
 

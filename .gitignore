@@ -33,7 +33,7 @@ htmlcov/
 venv/
 env/
 
-# JavaScript and frontend dependency/build output
+# Generated dependency/build output
 node_modules/
 .next/
 .nuxt/

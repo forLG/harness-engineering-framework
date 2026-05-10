@@ -101,7 +101,7 @@ Acceptance criteria:
 
 ### Milestone 8: Windows Executable Packaging
 
-Status: planned.
+Status: implemented.
 
 Goal: make QR Watch installable or directly runnable as a repeatable Windows executable build.
 

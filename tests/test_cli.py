@@ -209,3 +209,33 @@ def test_cli_tray_delegates_to_tray_entrypoint(monkeypatch):
         == 0
     )
     assert calls == [(screenshot_dir, 0)]
+
+
+def test_cli_packaged_defaults_to_tray_and_default_config(monkeypatch):
+    import qrwatch.tray
+
+    calls = []
+    local_app_data = Path("artifacts/test-localappdata/cli-packaged")
+    config_path = local_app_data / "QRWatch" / "config.env"
+    if config_path.exists():
+        config_path.unlink()
+
+    def fake_run_tray(config, *, monitor_index=None):
+        calls.append((config.config_path, config.dry_run, monitor_index))
+        return 0
+
+    monkeypatch.setenv("LOCALAPPDATA", str(local_app_data))
+    monkeypatch.setattr(qrwatch.tray, "run_tray", fake_run_tray)
+
+    assert (
+        main(
+            [],
+            use_default_config_file=True,
+            create_default_config=True,
+            default_tray=True,
+        )
+        == 0
+    )
+
+    assert calls == [(config_path, True, 1)]
+    assert config_path.exists()

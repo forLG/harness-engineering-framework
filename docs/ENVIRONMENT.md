@@ -10,7 +10,7 @@ The app source skeleton now exists under `src/qrwatch/`. Environment facts below
 
 - Primary OS: Windows.
 - Runtime mode: background desktop process. The first implementation should run in the logged-in user session, because Windows services do not automatically have access to the interactive desktop for screenshots.
-- Packaging target: plain Python tray/background commands for now. Generated build output, if created later, belongs under ignored `dist/` or `build/` folders. A PyInstaller executable or installer remains a future packaging decision.
+- Packaging target: PyInstaller Windows executable built from the `qrwatch` Conda environment. Generated build output belongs under ignored `dist/` and `build/` folders.
 
 ## Language Runtime
 
@@ -30,6 +30,7 @@ The app source skeleton now exists under `src/qrwatch/`. Environment facts below
   - `python-dotenv`: local environment configuration.
   - `requests`: webhook-style notification adapters.
   - `pystray`: simple Windows system tray controller UI.
+  - `pyinstaller`: local Windows executable builds.
   - `pytest`: test runner.
 
 Create the environment from the repository manifest:
@@ -62,7 +63,7 @@ No variables are required for the default dry-run startup. The current package s
 - `QRWATCH_NOTIFY_PROVIDER`: selected notifier, such as `dry-run`, `email`, `qq`, `wechat`, or `webhook`.
 - `QRWATCH_DRY_RUN`: dry-run mode flag, such as `true` or `false`.
 - `QRWATCH_CREDENTIAL_SOURCES`: comma-separated credential source labels, such as `env` or `local-file`.
-- `QRWATCH_CONFIG_FILE`: optional dotenv-style local config file path.
+- `QRWATCH_CONFIG_FILE`: optional dotenv-style local config file path. Packaged runs default to `%LOCALAPPDATA%\QRWatch\config.env` when this is unset.
 - `QRWATCH_DEDUP_WINDOW_SECONDS`: repeated QR payload suppression window, defaulting to 300 seconds.
 - `QRWATCH_STATE_PATH`: optional local JSON deduplication state path, defaulting to `%LOCALAPPDATA%\QRWatch\dedup-state.json`.
 - `QRWATCH_MONITOR_INDEX`: mss monitor index, defaulting to `1` for the primary monitor; use `0` for all monitors.
@@ -136,6 +137,14 @@ Application tray process:
 ```bash
 conda run -n qrwatch python -m qrwatch --tray
 ```
+
+Packaged Windows executable build:
+
+```powershell
+.\tools\build_windows_executable.ps1
+```
+
+The tracked PyInstaller spec is `packaging/qrwatch.spec`; output is generated under ignored `build/` and `dist/` directories. See `docs/PACKAGING.md` for executable runtime behavior and validation.
 
 Application test command:
 
