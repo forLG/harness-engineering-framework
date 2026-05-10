@@ -14,6 +14,7 @@ from qrwatch.config import (
     load_config,
     parse_credential_sources,
     parse_dedup_window,
+    parse_non_negative_int,
 )
 from qrwatch.detectors import DetectorBackendUnavailable, QRDetectionError
 
@@ -42,6 +43,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="Comma-separated credential source names, such as env or local-file.",
     )
     parser.add_argument(
+        "--run",
+        action="store_true",
+        help="Run the continuous background screenshot loop until stopped.",
+    )
+    parser.add_argument(
+        "--tray",
+        action="store_true",
+        help="Start the Windows user-session system tray process.",
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        dest="capture_once",
+        help="Alias for --capture-once.",
+    )
+    parser.add_argument(
         "--capture-once",
         action="store_true",
         help="Capture one screen frame and print metadata without saving it.",
@@ -55,7 +72,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--monitor",
         type=int,
-        default=1,
         help="mss monitor index to capture; use 1 for primary or 0 for all monitors.",
     )
     parser.add_argument(
@@ -66,6 +82,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--state-path",
         type=Path,
         help="Path to the local JSON deduplication state file.",
+    )
+    parser.add_argument(
+        "--log-dir",
+        type=Path,
+        help="Directory for local QR Watch logs.",
+    )
+    parser.add_argument(
+        "--screenshot-dir",
+        type=Path,
+        help="Directory opened by tray screenshot controls.",
+    )
+    parser.add_argument(
+        "--log-level",
+        choices=("DEBUG", "INFO", "WARNING", "ERROR"),
+        help="Log verbosity for background and tray runs.",
     )
     dry_run = parser.add_mutually_exclusive_group()
     dry_run.add_argument(
@@ -105,13 +136,43 @@ def main(argv: Sequence[str] | None = None) -> int:
             ).validated()
         if args.state_path is not None:
             config = replace(config, state_path=args.state_path).validated()
+        if args.log_dir is not None:
+            config = replace(config, log_dir=args.log_dir).validated()
+        if args.screenshot_dir is not None:
+            config = replace(config, screenshot_dir=args.screenshot_dir).validated()
+        if args.log_level is not None:
+            config = replace(config, log_level=args.log_level).validated()
+        if args.monitor is not None:
+            config = replace(
+                config,
+                monitor_index=parse_non_negative_int(
+                    str(args.monitor),
+                    name="monitor index",
+                ),
+            ).validated()
         if args.dry_run is not None:
             config = replace(config, dry_run=args.dry_run).validated()
 
+        if args.run and args.tray:
+            parser.error("--run and --tray cannot be used together")
+        if (args.run or args.tray) and args.save_capture is not None:
+            parser.error("--save-capture is only supported with --capture-once")
+
         app = QRWatchApp(config)
+        if args.tray:
+            from qrwatch.tray import run_tray
+
+            return run_tray(config, monitor_index=config.monitor_index)
+        if args.run:
+            from qrwatch.background import BackgroundController
+            from qrwatch.logging import configure_logging
+
+            configure_logging(config.log_dir, level=config.log_level)
+            controller = BackgroundController(app)
+            return controller.run_forever()
         if args.capture_once or args.save_capture is not None:
             summary = app.capture_once(
-                monitor_index=args.monitor,
+                monitor_index=config.monitor_index,
                 save_path=args.save_capture,
             )
         else:

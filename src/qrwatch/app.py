@@ -1,4 +1,4 @@
-"""Application composition and dry-run lifecycle."""
+"""Application composition and one-cycle lifecycle."""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ class RunSummary:
 
 
 class QRWatchApp:
-    """Compose product layers without enabling continuous watcher behavior yet."""
+    """Compose product layers for one capture/detection/notification cycle."""
 
     def __init__(self, config: AppConfig, *, state_store=None, notifier=None) -> None:
         self.config = config
@@ -50,7 +50,7 @@ class QRWatchApp:
         )
 
     def run_once(self) -> RunSummary:
-        """Run the milestone-2 dry-run path."""
+        """Exercise notifier composition without capturing the screen."""
 
         result = self.notifier.notify_dry_run()
         return RunSummary(

@@ -15,6 +15,8 @@ def test_load_config_defaults_to_safe_dry_run():
     assert config.smtp_host == "smtp.qq.com"
     assert config.smtp_port == 465
     assert config.smtp_use_ssl is True
+    assert config.log_level == "INFO"
+    assert config.monitor_index == 1
 
 
 def test_load_config_from_env():
@@ -28,6 +30,10 @@ def test_load_config_from_env():
             "QRWATCH_CREDENTIAL_SOURCES": "env,local-file",
             "QRWATCH_DEDUP_WINDOW_SECONDS": "45",
             "QRWATCH_STATE_PATH": str(state_path),
+            "QRWATCH_LOG_DIR": "artifacts/test-logs",
+            "QRWATCH_SCREENSHOT_DIR": "artifacts/test-screenshots",
+            "QRWATCH_LOG_LEVEL": "debug",
+            "QRWATCH_MONITOR_INDEX": "0",
             "QRWATCH_SMTP_HOST": "smtp.example.test",
             "QRWATCH_SMTP_PORT": "587",
             "QRWATCH_SMTP_USERNAME": "sender@example.test",
@@ -45,6 +51,10 @@ def test_load_config_from_env():
     assert config.credential_sources == ("env", "local-file")
     assert config.dedup_window_seconds == 45.0
     assert config.state_path == state_path
+    assert config.log_dir == Path("artifacts/test-logs")
+    assert config.screenshot_dir == Path("artifacts/test-screenshots")
+    assert config.log_level == "DEBUG"
+    assert config.monitor_index == 0
     assert config.smtp_host == "smtp.example.test"
     assert config.smtp_port == 587
     assert config.smtp_username == "sender@example.test"
@@ -60,6 +70,8 @@ def test_default_state_path_uses_local_app_data():
     config = load_config(env={"LOCALAPPDATA": str(local_app_data)})
 
     assert config.state_path == local_app_data / "QRWatch" / "dedup-state.json"
+    assert config.log_dir == local_app_data / "QRWatch" / "logs"
+    assert config.screenshot_dir == local_app_data / "QRWatch" / "screenshots"
 
 
 def test_env_overrides_config_file():
@@ -81,6 +93,11 @@ def test_rejects_invalid_interval():
 def test_rejects_invalid_dedup_window():
     with pytest.raises(ConfigError, match="deduplication window"):
         load_config(env={"QRWATCH_DEDUP_WINDOW_SECONDS": "0"})
+
+
+def test_rejects_invalid_monitor_index():
+    with pytest.raises(ConfigError, match="monitor index"):
+        load_config(env={"QRWATCH_MONITOR_INDEX": "-1"})
 
 
 def test_rejects_live_dry_run_provider():

@@ -17,6 +17,8 @@ DEFAULT_DEDUP_WINDOW_SECONDS = 300.0
 DEFAULT_SMTP_HOST = "smtp.qq.com"
 DEFAULT_SMTP_PORT = 465
 DEFAULT_SMTP_TIMEOUT_SECONDS = 10.0
+DEFAULT_MONITOR_INDEX = 1
+DEFAULT_LOG_LEVEL = "INFO"
 
 ENV_CONFIG_FILE = "QRWATCH_CONFIG_FILE"
 ENV_INTERVAL_SECONDS = "QRWATCH_INTERVAL_SECONDS"
@@ -25,6 +27,10 @@ ENV_DRY_RUN = "QRWATCH_DRY_RUN"
 ENV_CREDENTIAL_SOURCES = "QRWATCH_CREDENTIAL_SOURCES"
 ENV_DEDUP_WINDOW_SECONDS = "QRWATCH_DEDUP_WINDOW_SECONDS"
 ENV_STATE_PATH = "QRWATCH_STATE_PATH"
+ENV_LOG_DIR = "QRWATCH_LOG_DIR"
+ENV_SCREENSHOT_DIR = "QRWATCH_SCREENSHOT_DIR"
+ENV_LOG_LEVEL = "QRWATCH_LOG_LEVEL"
+ENV_MONITOR_INDEX = "QRWATCH_MONITOR_INDEX"
 ENV_SMTP_HOST = "QRWATCH_SMTP_HOST"
 ENV_SMTP_PORT = "QRWATCH_SMTP_PORT"
 ENV_SMTP_USERNAME = "QRWATCH_SMTP_USERNAME"
@@ -48,6 +54,12 @@ class AppConfig:
     config_path: Path | None = None
     dedup_window_seconds: float = DEFAULT_DEDUP_WINDOW_SECONDS
     state_path: Path = field(default_factory=lambda: default_state_path(os.environ))
+    log_dir: Path = field(default_factory=lambda: default_log_dir(os.environ))
+    screenshot_dir: Path = field(
+        default_factory=lambda: default_screenshot_dir(os.environ)
+    )
+    log_level: str = DEFAULT_LOG_LEVEL
+    monitor_index: int = DEFAULT_MONITOR_INDEX
     smtp_host: str = DEFAULT_SMTP_HOST
     smtp_port: int = DEFAULT_SMTP_PORT
     smtp_username: str | None = field(default=None, repr=False)
@@ -69,6 +81,10 @@ class AppConfig:
             raise ConfigError("credential sources must not contain empty values")
         if self.dedup_window_seconds <= 0:
             raise ConfigError("deduplication window must be greater than zero seconds")
+        if self.monitor_index < 0:
+            raise ConfigError("monitor index must be zero or greater")
+        if self.log_level.strip().upper() not in {"DEBUG", "INFO", "WARNING", "ERROR"}:
+            raise ConfigError("log level must be DEBUG, INFO, WARNING, or ERROR")
         if self.smtp_port <= 0:
             raise ConfigError("SMTP port must be greater than zero")
         if not self.smtp_host.strip():
@@ -125,6 +141,10 @@ def load_config(
                 ENV_CREDENTIAL_SOURCES,
                 ENV_DEDUP_WINDOW_SECONDS,
                 ENV_STATE_PATH,
+                ENV_LOG_DIR,
+                ENV_SCREENSHOT_DIR,
+                ENV_LOG_LEVEL,
+                ENV_MONITOR_INDEX,
                 ENV_SMTP_HOST,
                 ENV_SMTP_PORT,
                 ENV_SMTP_USERNAME,
@@ -156,6 +176,15 @@ def load_config(
         state_path=Path(
             values.get(ENV_STATE_PATH)
             or str(default_state_path(current_env))
+        ),
+        log_dir=Path(values.get(ENV_LOG_DIR) or str(default_log_dir(current_env))),
+        screenshot_dir=Path(
+            values.get(ENV_SCREENSHOT_DIR) or str(default_screenshot_dir(current_env))
+        ),
+        log_level=values.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL).strip().upper(),
+        monitor_index=parse_non_negative_int(
+            values.get(ENV_MONITOR_INDEX, str(DEFAULT_MONITOR_INDEX)),
+            name="monitor index",
         ),
         smtp_host=values.get(ENV_SMTP_HOST, DEFAULT_SMTP_HOST).strip(),
         smtp_port=parse_positive_int(
@@ -220,6 +249,16 @@ def parse_positive_int(value: str, *, name: str) -> int:
     return parsed
 
 
+def parse_non_negative_int(value: str, *, name: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ConfigError(f"{name} must be an integer") from exc
+    if parsed < 0:
+        raise ConfigError(f"{name} must be zero or greater")
+    return parsed
+
+
 def parse_positive_float(value: str, *, name: str) -> float:
     try:
         parsed = float(value)
@@ -238,10 +277,22 @@ def optional_str(value: str | None) -> str | None:
 
 
 def default_state_path(env: Mapping[str, str] | None = None) -> Path:
+    return default_runtime_dir(env) / "dedup-state.json"
+
+
+def default_log_dir(env: Mapping[str, str] | None = None) -> Path:
+    return default_runtime_dir(env) / "logs"
+
+
+def default_screenshot_dir(env: Mapping[str, str] | None = None) -> Path:
+    return default_runtime_dir(env) / "screenshots"
+
+
+def default_runtime_dir(env: Mapping[str, str] | None = None) -> Path:
     current_env = os.environ if env is None else env
     if current_env.get("LOCALAPPDATA"):
-        return Path(current_env["LOCALAPPDATA"]) / "QRWatch" / "dedup-state.json"
-    return Path.home() / "AppData" / "Local" / "QRWatch" / "dedup-state.json"
+        return Path(current_env["LOCALAPPDATA"]) / "QRWatch"
+    return Path.home() / "AppData" / "Local" / "QRWatch"
 
 
 def _resolve_config_path(

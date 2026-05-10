@@ -116,3 +116,57 @@ def test_cli_applies_deduplication_options(monkeypatch):
     monkeypatch.setattr("qrwatch.cli.QRWatchApp", FakeApp)
 
     assert main(["--dedup-window", "42", "--state-path", str(state_path)]) == 0
+
+
+def test_cli_run_starts_background_controller(monkeypatch):
+    import qrwatch.background
+    import qrwatch.logging
+
+    log_dir = Path("artifacts/test-logs/cli-run")
+    calls = []
+
+    def fake_configure_logging(log_dir, *, level="INFO", console=True):
+        calls.append((log_dir, level, console))
+        return Path(log_dir) / "qrwatch.log"
+
+    class FakeController:
+        def __init__(self, app):
+            self.app = app
+
+        def run_forever(self):
+            assert self.app.config.monitor_index == 0
+            assert self.app.config.log_dir == log_dir
+            return 0
+
+    monkeypatch.setattr(qrwatch.logging, "configure_logging", fake_configure_logging)
+    monkeypatch.setattr(qrwatch.background, "BackgroundController", FakeController)
+
+    assert main(["--run", "--monitor", "0", "--log-dir", str(log_dir)]) == 0
+    assert calls == [(log_dir, "INFO", True)]
+
+
+def test_cli_tray_delegates_to_tray_entrypoint(monkeypatch):
+    import qrwatch.tray
+
+    screenshot_dir = Path("artifacts/test-screenshots/cli-tray")
+    calls = []
+
+    def fake_run_tray(config, *, monitor_index=None):
+        calls.append((config.screenshot_dir, monitor_index))
+        return 0
+
+    monkeypatch.setattr(qrwatch.tray, "run_tray", fake_run_tray)
+
+    assert (
+        main(
+            [
+                "--tray",
+                "--monitor",
+                "0",
+                "--screenshot-dir",
+                str(screenshot_dir),
+            ]
+        )
+        == 0
+    )
+    assert calls == [(screenshot_dir, 0)]

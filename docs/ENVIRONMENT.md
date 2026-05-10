@@ -10,7 +10,7 @@ The app source skeleton now exists under `src/qrwatch/`. Environment facts below
 
 - Primary OS: Windows.
 - Runtime mode: background desktop process. The first implementation should run in the logged-in user session, because Windows services do not automatically have access to the interactive desktop for screenshots.
-- Packaging target: TODO: decide whether the first distributable is a plain Python script, scheduled task, tray app, Windows service wrapper, or PyInstaller executable.
+- Packaging target: plain Python tray/background commands for now. A PyInstaller executable or installer remains a future packaging decision.
 
 ## Language Runtime
 
@@ -65,6 +65,10 @@ No variables are required for the default dry-run startup. The current package s
 - `QRWATCH_CONFIG_FILE`: optional dotenv-style local config file path.
 - `QRWATCH_DEDUP_WINDOW_SECONDS`: repeated QR payload suppression window, defaulting to 300 seconds.
 - `QRWATCH_STATE_PATH`: optional local JSON deduplication state path, defaulting to `%LOCALAPPDATA%\QRWatch\dedup-state.json`.
+- `QRWATCH_MONITOR_INDEX`: mss monitor index, defaulting to `1` for the primary monitor; use `0` for all monitors.
+- `QRWATCH_LOG_DIR`: optional log directory, defaulting to `%LOCALAPPDATA%\QRWatch\logs`.
+- `QRWATCH_SCREENSHOT_DIR`: optional screenshot folder opened by tray controls, defaulting to `%LOCALAPPDATA%\QRWatch\screenshots`.
+- `QRWATCH_LOG_LEVEL`: `DEBUG`, `INFO`, `WARNING`, or `ERROR`; defaults to `INFO`.
 - `QRWATCH_SMTP_HOST`: SMTP host, defaulting to `smtp.qq.com`.
 - `QRWATCH_SMTP_PORT`: SMTP port, defaulting to `465`.
 - `QRWATCH_SMTP_USERNAME`: SMTP mailbox username, such as a QQ Mail address.
@@ -110,6 +114,24 @@ Application dry-run entrypoint:
 
 ```bash
 conda run -n qrwatch python -m qrwatch
+```
+
+Application one-shot capture:
+
+```bash
+conda run -n qrwatch python -m qrwatch --once
+```
+
+Application background loop:
+
+```bash
+conda run -n qrwatch python -m qrwatch --run
+```
+
+Application tray process:
+
+```bash
+conda run -n qrwatch python -m qrwatch --tray
 ```
 
 Application test command:

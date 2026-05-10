@@ -19,7 +19,7 @@ The tray controller should use `pystray`; any small settings/status window can u
 
 ## Product Entrypoints
 
-Planned commands:
+Implemented commands:
 
 ```bash
 conda run -n qrwatch python -m qrwatch --tray
@@ -31,17 +31,17 @@ conda run -n qrwatch python -m qrwatch --dry-run
 Expected behavior:
 
 - `--tray`: start the tray UI and own the worker lifecycle.
-- `--run`: run the background screenshot loop without tray UI, useful for debugging and scheduled runs.
-- `--once`: capture one frame, run QR detection, write logs/screenshots according to config, then exit.
+- `--run`: run the background screenshot loop without tray UI until Ctrl+C, useful for debugging and scheduled runs.
+- `--once`: capture one frame, run QR detection and notification dispatch, then exit without saving screenshots unless `--save-capture PATH` is supplied.
 - `--dry-run`: never send external messages; log the notification event instead.
 
-These commands are planned until `src/qrwatch/` is implemented.
+The older `--capture-once` flag remains as an alias for `--once`.
 
 ## Tray UI Controls
 
 Minimum tray menu:
 
-- Status: running, paused, stopped, degraded, or error.
+- Status: running, paused, stopped, or degraded.
 - Start monitoring.
 - Pause monitoring.
 - Resume monitoring.
@@ -61,16 +61,16 @@ The worker loop owns app behavior:
 2. Initialize logging, screenshot storage, QR detector, deduplication state, and notifier.
 3. Wait until monitoring is running.
 4. Capture the current screen.
-5. Store screenshot evidence according to retention settings.
-6. Detect QR codes.
-7. Normalize detections into events.
-8. Deduplicate repeated payloads.
-9. Notify configured provider or dry-run logger.
+5. Detect QR codes.
+6. Normalize detections into events.
+7. Deduplicate repeated payloads.
+8. Notify configured provider or dry-run logger.
+9. Log capture, detection, deduplication, notification, or redacted failure metadata.
 10. Sleep until the next configured interval.
 11. On pause, stop capture and notification work but keep the tray alive.
 12. On shutdown, flush logs and state.
 
-Default interval: 5 seconds for development. The user can increase it after reliability and storage behavior are proven.
+Default interval: 30 seconds. The user can decrease it for development or increase it after reliability and storage behavior are proven.
 
 ## Runtime State
 
@@ -79,7 +79,7 @@ Real app runs should write local runtime state outside the Git repository:
 - Base directory: `%LOCALAPPDATA%\QRWatch\`
 - Logs: `%LOCALAPPDATA%\QRWatch\logs\`
 - Screenshots: `%LOCALAPPDATA%\QRWatch\screenshots\`
-- State: `%LOCALAPPDATA%\QRWatch\state\`
+- State: `%LOCALAPPDATA%\QRWatch\dedup-state.json`
 - Config: `%LOCALAPPDATA%\QRWatch\config.env` or repository-local `.env` during development.
 
 Repository `artifacts/` directories remain harness evidence buckets. Do not use them as the default product runtime store.
@@ -92,9 +92,10 @@ Planned environment variables:
 - `QRWATCH_DRY_RUN`: when true, do not send external messages.
 - `QRWATCH_NOTIFY_PROVIDER`: `dry-run`, `email`, `qq-mail`, `qqmail`, `webhook`, `qq`, or `wechat`. Only `dry-run`, `email`, `qq-mail`, and `qqmail` have implemented behavior now.
 - `QRWATCH_SMTP_HOST`, `QRWATCH_SMTP_PORT`, `QRWATCH_SMTP_USERNAME`, `QRWATCH_SMTP_PASSWORD`, `QRWATCH_NOTIFY_TO`: SMTP email notifier settings for live QQ Mail-compatible sends.
-- `QRWATCH_SCREENSHOT_MODE`: `recent`, `detections`, `errors`, or `all`.
-- `QRWATCH_SCREENSHOT_RETENTION_COUNT`: maximum recent screenshots to keep.
-- `QRWATCH_DEDUP_SECONDS`: suppress repeated QR payloads during this window.
+- `QRWATCH_MONITOR_INDEX`: mss monitor index, defaulting to `1`.
+- `QRWATCH_LOG_DIR`: local log directory.
+- `QRWATCH_SCREENSHOT_DIR`: local screenshot folder opened by tray controls.
+- `QRWATCH_DEDUP_WINDOW_SECONDS`: suppress repeated QR payloads during this window.
 - `QRWATCH_LOG_LEVEL`: `DEBUG`, `INFO`, `WARNING`, or `ERROR`.
 
 Provider-specific credentials stay in local env/config only and must never be committed.

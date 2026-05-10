@@ -74,7 +74,7 @@ Acceptance criteria:
 
 ### Milestone 6: Background Run Model
 
-Status: designed.
+Status: implemented.
 
 Goal: make the app practical to run continuously on Windows through a logged-in user-session tray process.
 
