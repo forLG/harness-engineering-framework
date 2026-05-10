@@ -153,4 +153,5 @@ def main(argv: Sequence[str] | None = None) -> int:
     else:
         print("capture=disabled")
     print(f"notifications_sent={summary.notifications_sent}")
+    print(f"notifications_failed={summary.notifications_failed}")
     return 0

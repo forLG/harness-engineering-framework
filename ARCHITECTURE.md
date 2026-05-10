@@ -4,7 +4,7 @@ Status: applied first pass.
 
 This repository is a Codex harness for a planned Windows Python app. The app will run in the background, periodically capture screenshots from the logged-in Windows desktop, detect QR codes in those screenshots, and notify a configured channel through a provider interface.
 
-The first application source skeleton exists under `src/qrwatch/`. It currently supports configuration loading, a dry-run entrypoint, mss-backed capture-once screen inspection, OpenCV-backed QR detection, and JSON-backed deduplication events. Notification providers remain planned follow-up milestones.
+The first application source skeleton exists under `src/qrwatch/`. It currently supports configuration loading, a dry-run entrypoint, mss-backed capture-once screen inspection, OpenCV-backed QR detection, JSON-backed deduplication events, and dry-run or QQ Mail-compatible SMTP notification dispatch.
 
 ## Product Shape
 
@@ -27,7 +27,7 @@ Intended source layout:
 - `src/qrwatch/capture.py`: Windows screenshot capture abstraction.
 - `src/qrwatch/detectors/`: QR detection implementation.
 - `src/qrwatch/events.py`: QR detection event shaping.
-- `src/qrwatch/notifiers/`: notifier interface plus email, QQ, WeChat, or webhook adapters.
+- `src/qrwatch/notifiers/`: notifier interface plus dry-run and QQ Mail-compatible SMTP email adapters; QQ, WeChat, and webhook adapters remain future extension points.
 - `src/qrwatch/state.py`: deduplication state and local persistence.
 - `src/qrwatch/logging.py`: log configuration and redaction helpers.
 - `tests/`: unit tests and small image fixtures.
@@ -59,6 +59,7 @@ Contract files:
 
 - `runtime/tasks/TASK_SCHEMA.md` is the harness task contract.
 - App config is currently loaded from optional dotenv-style config files and `QRWATCH_*` environment variables in `src/qrwatch/config.py`.
+- The implemented real notifier is SMTP email. `qq-mail`, `qqmail`, and `email` map to the same SMTP adapter.
 
 ## Runtime Core
 
@@ -116,7 +117,7 @@ Product records:
 - Local services and ports: no local service or port is required for the first prototype.
 - Credentials and secrets: notification credentials must be supplied by a human and excluded from Git.
 - Runtime artifacts: harness artifacts are stored under `artifacts/`.
-- Production or external systems: notification providers are external systems. Sending real messages requires human-supplied credentials and test recipients.
+- Production or external systems: notification providers are external systems. Sending real messages requires human-supplied credentials, `QRWATCH_DRY_RUN=false`, and a test recipient.
 
 ## Security And Privacy Rules
 
@@ -145,6 +146,7 @@ Planned app validation:
 - Unit tests for config loading, deduplication, QR event shaping, and notifier interface behavior.
 - Fixture-based QR detection tests using static test images.
 - Dry-run notification tests that do not contact external services.
+- QQ Mail-compatible SMTP notification tests use fake SMTP clients and do not contact external services.
 - Optional Windows manual validation for background capture behavior.
 
 Primary test command:
@@ -162,6 +164,6 @@ conda run -n qrwatch python -m qrwatch
 ## Open Decisions
 
 - Packaging and background-run model: scheduled task, tray process, service wrapper, or packaged executable.
-- First real notification provider.
+- Webhook, WeChat, and QQ bot notification providers beyond QQ Mail SMTP.
 - Long-term QR payload retention after notification; current deduplication state stores only hashes.
 - App name. This document uses `qrwatch` as a working name.

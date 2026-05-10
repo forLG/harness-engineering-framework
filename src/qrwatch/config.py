@@ -14,6 +14,9 @@ DEFAULT_INTERVAL_SECONDS = 30.0
 DEFAULT_NOTIFIER_PROVIDER = "dry-run"
 DEFAULT_CREDENTIAL_SOURCES = ("env",)
 DEFAULT_DEDUP_WINDOW_SECONDS = 300.0
+DEFAULT_SMTP_HOST = "smtp.qq.com"
+DEFAULT_SMTP_PORT = 465
+DEFAULT_SMTP_TIMEOUT_SECONDS = 10.0
 
 ENV_CONFIG_FILE = "QRWATCH_CONFIG_FILE"
 ENV_INTERVAL_SECONDS = "QRWATCH_INTERVAL_SECONDS"
@@ -22,6 +25,14 @@ ENV_DRY_RUN = "QRWATCH_DRY_RUN"
 ENV_CREDENTIAL_SOURCES = "QRWATCH_CREDENTIAL_SOURCES"
 ENV_DEDUP_WINDOW_SECONDS = "QRWATCH_DEDUP_WINDOW_SECONDS"
 ENV_STATE_PATH = "QRWATCH_STATE_PATH"
+ENV_SMTP_HOST = "QRWATCH_SMTP_HOST"
+ENV_SMTP_PORT = "QRWATCH_SMTP_PORT"
+ENV_SMTP_USERNAME = "QRWATCH_SMTP_USERNAME"
+ENV_SMTP_PASSWORD = "QRWATCH_SMTP_PASSWORD"
+ENV_SMTP_USE_SSL = "QRWATCH_SMTP_USE_SSL"
+ENV_SMTP_TIMEOUT_SECONDS = "QRWATCH_SMTP_TIMEOUT_SECONDS"
+ENV_NOTIFY_FROM = "QRWATCH_NOTIFY_FROM"
+ENV_NOTIFY_TO = "QRWATCH_NOTIFY_TO"
 
 
 class ConfigError(ValueError):
@@ -37,11 +48,20 @@ class AppConfig:
     config_path: Path | None = None
     dedup_window_seconds: float = DEFAULT_DEDUP_WINDOW_SECONDS
     state_path: Path = field(default_factory=lambda: default_state_path(os.environ))
+    smtp_host: str = DEFAULT_SMTP_HOST
+    smtp_port: int = DEFAULT_SMTP_PORT
+    smtp_username: str | None = field(default=None, repr=False)
+    smtp_password: str | None = field(default=None, repr=False)
+    smtp_use_ssl: bool = True
+    smtp_timeout_seconds: float = DEFAULT_SMTP_TIMEOUT_SECONDS
+    notify_from: str | None = None
+    notify_to: str | None = None
 
     def validated(self) -> "AppConfig":
         if self.interval_seconds <= 0:
             raise ConfigError("interval must be greater than zero seconds")
-        if not self.notifier_provider.strip():
+        provider = self.notifier_provider.strip().lower()
+        if not provider:
             raise ConfigError("notifier provider must not be empty")
         if not self.credential_sources:
             raise ConfigError("at least one credential source is required")
@@ -49,6 +69,22 @@ class AppConfig:
             raise ConfigError("credential sources must not contain empty values")
         if self.dedup_window_seconds <= 0:
             raise ConfigError("deduplication window must be greater than zero seconds")
+        if self.smtp_port <= 0:
+            raise ConfigError("SMTP port must be greater than zero")
+        if not self.smtp_host.strip():
+            raise ConfigError("SMTP host must not be empty")
+        if self.smtp_timeout_seconds <= 0:
+            raise ConfigError("SMTP timeout must be greater than zero seconds")
+        if not self.dry_run:
+            if provider == "dry-run":
+                raise ConfigError("real notifier provider is required when dry-run is disabled")
+            if provider in {"email", "qq-mail", "qqmail"}:
+                if not self.smtp_username:
+                    raise ConfigError("SMTP username is required for email notifications")
+                if not self.smtp_password:
+                    raise ConfigError("SMTP password is required for email notifications")
+                if not self.notify_to:
+                    raise ConfigError("notification recipient is required for email notifications")
         return self
 
 
@@ -60,8 +96,8 @@ def load_config(
     """Load configuration from an optional dotenv file and environment variables.
 
     Values from environment variables override values from the config file.
-    Secrets may be referenced by credential source, but are not read or returned
-    by this milestone-2 configuration object.
+    Secrets may be read for real notifiers, but they must never be logged or
+    committed.
     """
 
     current_env = os.environ if env is None else env
@@ -89,6 +125,14 @@ def load_config(
                 ENV_CREDENTIAL_SOURCES,
                 ENV_DEDUP_WINDOW_SECONDS,
                 ENV_STATE_PATH,
+                ENV_SMTP_HOST,
+                ENV_SMTP_PORT,
+                ENV_SMTP_USERNAME,
+                ENV_SMTP_PASSWORD,
+                ENV_SMTP_USE_SSL,
+                ENV_SMTP_TIMEOUT_SECONDS,
+                ENV_NOTIFY_FROM,
+                ENV_NOTIFY_TO,
             )
             if key in current_env
         }
@@ -113,6 +157,20 @@ def load_config(
             values.get(ENV_STATE_PATH)
             or str(default_state_path(current_env))
         ),
+        smtp_host=values.get(ENV_SMTP_HOST, DEFAULT_SMTP_HOST).strip(),
+        smtp_port=parse_positive_int(
+            values.get(ENV_SMTP_PORT, str(DEFAULT_SMTP_PORT)),
+            name="SMTP port",
+        ),
+        smtp_username=optional_str(values.get(ENV_SMTP_USERNAME)),
+        smtp_password=optional_str(values.get(ENV_SMTP_PASSWORD)),
+        smtp_use_ssl=parse_bool(values.get(ENV_SMTP_USE_SSL, "true")),
+        smtp_timeout_seconds=parse_positive_float(
+            values.get(ENV_SMTP_TIMEOUT_SECONDS, str(DEFAULT_SMTP_TIMEOUT_SECONDS)),
+            name="SMTP timeout",
+        ),
+        notify_from=optional_str(values.get(ENV_NOTIFY_FROM)),
+        notify_to=optional_str(values.get(ENV_NOTIFY_TO)),
     ).validated()
 
 
@@ -150,6 +208,33 @@ def parse_dedup_window(value: str) -> float:
     if window <= 0:
         raise ConfigError("deduplication window must be greater than zero seconds")
     return window
+
+
+def parse_positive_int(value: str, *, name: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ConfigError(f"{name} must be an integer") from exc
+    if parsed <= 0:
+        raise ConfigError(f"{name} must be greater than zero")
+    return parsed
+
+
+def parse_positive_float(value: str, *, name: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise ConfigError(f"{name} must be a number of seconds") from exc
+    if parsed <= 0:
+        raise ConfigError(f"{name} must be greater than zero seconds")
+    return parsed
+
+
+def optional_str(value: str | None) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
 
 
 def default_state_path(env: Mapping[str, str] | None = None) -> Path:

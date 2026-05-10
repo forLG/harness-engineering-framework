@@ -11,6 +11,7 @@ from qrwatch.config import AppConfig
 from qrwatch.detectors import detect_qr_codes
 from qrwatch.events import shape_detection_events
 from qrwatch.notifiers import create_notifier
+from qrwatch.notifiers.base import NotificationResult
 from qrwatch.state import JsonDeduplicationStore
 
 
@@ -34,14 +35,15 @@ class RunSummary:
     notification_events_count: int = 0
     suppressed_events_count: int = 0
     notifications_sent: int = 0
+    notifications_failed: int = 0
 
 
 class QRWatchApp:
     """Compose product layers without enabling continuous watcher behavior yet."""
 
-    def __init__(self, config: AppConfig, *, state_store=None) -> None:
+    def __init__(self, config: AppConfig, *, state_store=None, notifier=None) -> None:
         self.config = config
-        self.notifier = create_notifier(config)
+        self.notifier = notifier or create_notifier(config)
         self.state_store = state_store or JsonDeduplicationStore(
             config.state_path,
             window_seconds=config.dedup_window_seconds,
@@ -50,12 +52,14 @@ class QRWatchApp:
     def run_once(self) -> RunSummary:
         """Run the milestone-2 dry-run path."""
 
-        self.notifier.notify_dry_run()
+        result = self.notifier.notify_dry_run()
         return RunSummary(
             dry_run=self.config.dry_run,
             interval_seconds=self.config.interval_seconds,
             notifier_provider=self.config.notifier_provider,
             credential_sources=self.config.credential_sources,
+            notifications_sent=1 if result.sent else 0,
+            notifications_failed=1 if result.error else 0,
         )
 
     def capture_once(
@@ -70,6 +74,10 @@ class QRWatchApp:
         detections = detect_qr_codes(frame.pixels, source=frame.source)
         events = shape_detection_events(detections, detected_at=frame.captured_at)
         deduplication = self.state_store.filter_events(events)
+        notification_results = tuple(
+            self.notifier.notify(event)
+            for event in deduplication.notification_events
+        )
         saved_path = save_frame_png(frame, save_path) if save_path is not None else None
         return RunSummary(
             dry_run=self.config.dry_run,
@@ -87,4 +95,14 @@ class QRWatchApp:
             qr_events_count=len(events),
             notification_events_count=len(deduplication.notification_events),
             suppressed_events_count=len(deduplication.suppressed_events),
+            notifications_sent=count_sent(notification_results),
+            notifications_failed=count_failed(notification_results),
         )
+
+
+def count_sent(results: tuple[NotificationResult, ...]) -> int:
+    return sum(1 for result in results if result.sent)
+
+
+def count_failed(results: tuple[NotificationResult, ...]) -> int:
+    return sum(1 for result in results if result.error)

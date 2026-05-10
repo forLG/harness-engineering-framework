@@ -44,7 +44,8 @@ The environment already exists on this workstation as `qrwatch`.
 
 - Required local services: none for the first local prototype.
 - Optional external services:
-  - SMTP mailbox provider for email notifications.
+  - SMTP mailbox provider for email notifications. The first implemented real
+    provider is QQ Mail-compatible SMTP.
   - QQ, WeChat, or webhook bridge provider if selected.
 - Service credentials: must be provided by the human through local environment variables or a local ignored config file. Do not commit credentials.
 
@@ -64,10 +65,29 @@ No variables are required for the default dry-run startup. The current package s
 - `QRWATCH_CONFIG_FILE`: optional dotenv-style local config file path.
 - `QRWATCH_DEDUP_WINDOW_SECONDS`: repeated QR payload suppression window, defaulting to 300 seconds.
 - `QRWATCH_STATE_PATH`: optional local JSON deduplication state path, defaulting to `%LOCALAPPDATA%\QRWatch\dedup-state.json`.
+- `QRWATCH_SMTP_HOST`: SMTP host, defaulting to `smtp.qq.com`.
+- `QRWATCH_SMTP_PORT`: SMTP port, defaulting to `465`.
+- `QRWATCH_SMTP_USERNAME`: SMTP mailbox username, such as a QQ Mail address.
+- `QRWATCH_SMTP_PASSWORD`: SMTP authorization code or app password, not a mailbox login password.
+- `QRWATCH_SMTP_USE_SSL`: whether to use SMTP over SSL, defaulting to `true`.
+- `QRWATCH_SMTP_TIMEOUT_SECONDS`: SMTP connection timeout, defaulting to `10`.
+- `QRWATCH_NOTIFY_FROM`: optional sender address override; defaults to `QRWATCH_SMTP_USERNAME`.
+- `QRWATCH_NOTIFY_TO`: notification recipient address.
+
+QQ Mail SMTP local config example:
+
+```dotenv
+QRWATCH_NOTIFY_PROVIDER=qq-mail
+QRWATCH_DRY_RUN=false
+QRWATCH_SMTP_HOST=smtp.qq.com
+QRWATCH_SMTP_PORT=465
+QRWATCH_SMTP_USERNAME=your-address@qq.com
+QRWATCH_SMTP_PASSWORD=your-local-authorization-code
+QRWATCH_NOTIFY_TO=receiver@example.com
+```
 
 Planned provider-specific variables should follow this pattern:
 
-- `QRWATCH_SMTP_HOST`, `QRWATCH_SMTP_PORT`, `QRWATCH_SMTP_USERNAME`, `QRWATCH_SMTP_PASSWORD`, `QRWATCH_NOTIFY_TO`: email notifier settings.
 - `QRWATCH_WEBHOOK_URL`: webhook-style provider endpoint, if added.
 
 Secrets must not be printed in logs, preserved in artifacts, or included in screenshots.

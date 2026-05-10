@@ -12,6 +12,9 @@ def test_load_config_defaults_to_safe_dry_run():
     assert config.dry_run is True
     assert config.credential_sources == ("env",)
     assert config.dedup_window_seconds == 300.0
+    assert config.smtp_host == "smtp.qq.com"
+    assert config.smtp_port == 465
+    assert config.smtp_use_ssl is True
 
 
 def test_load_config_from_env():
@@ -25,6 +28,14 @@ def test_load_config_from_env():
             "QRWATCH_CREDENTIAL_SOURCES": "env,local-file",
             "QRWATCH_DEDUP_WINDOW_SECONDS": "45",
             "QRWATCH_STATE_PATH": str(state_path),
+            "QRWATCH_SMTP_HOST": "smtp.example.test",
+            "QRWATCH_SMTP_PORT": "587",
+            "QRWATCH_SMTP_USERNAME": "sender@example.test",
+            "QRWATCH_SMTP_PASSWORD": "secret",
+            "QRWATCH_SMTP_USE_SSL": "false",
+            "QRWATCH_SMTP_TIMEOUT_SECONDS": "3",
+            "QRWATCH_NOTIFY_FROM": "qrwatch@example.test",
+            "QRWATCH_NOTIFY_TO": "receiver@example.test",
         }
     )
 
@@ -34,6 +45,14 @@ def test_load_config_from_env():
     assert config.credential_sources == ("env", "local-file")
     assert config.dedup_window_seconds == 45.0
     assert config.state_path == state_path
+    assert config.smtp_host == "smtp.example.test"
+    assert config.smtp_port == 587
+    assert config.smtp_username == "sender@example.test"
+    assert config.smtp_password == "secret"
+    assert config.smtp_use_ssl is False
+    assert config.smtp_timeout_seconds == 3.0
+    assert config.notify_from == "qrwatch@example.test"
+    assert config.notify_to == "receiver@example.test"
 
 
 def test_default_state_path_uses_local_app_data():
@@ -62,3 +81,37 @@ def test_rejects_invalid_interval():
 def test_rejects_invalid_dedup_window():
     with pytest.raises(ConfigError, match="deduplication window"):
         load_config(env={"QRWATCH_DEDUP_WINDOW_SECONDS": "0"})
+
+
+def test_rejects_live_dry_run_provider():
+    with pytest.raises(ConfigError, match="real notifier provider"):
+        load_config(env={"QRWATCH_DRY_RUN": "false"})
+
+
+def test_rejects_live_email_without_credentials():
+    with pytest.raises(ConfigError, match="SMTP username"):
+        load_config(
+            env={
+                "QRWATCH_NOTIFY_PROVIDER": "email",
+                "QRWATCH_DRY_RUN": "false",
+            }
+        )
+
+
+def test_loads_live_qq_mail_config():
+    config = load_config(
+        env={
+            "QRWATCH_NOTIFY_PROVIDER": "qq-mail",
+            "QRWATCH_DRY_RUN": "false",
+            "QRWATCH_SMTP_USERNAME": "sender@qq.com",
+            "QRWATCH_SMTP_PASSWORD": "authorization-code",
+            "QRWATCH_NOTIFY_TO": "receiver@example.com",
+        }
+    )
+
+    assert config.notifier_provider == "qq-mail"
+    assert config.dry_run is False
+    assert config.smtp_host == "smtp.qq.com"
+    assert config.smtp_port == 465
+    assert config.smtp_username == "sender@qq.com"
+    assert config.notify_to == "receiver@example.com"

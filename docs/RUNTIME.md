@@ -90,7 +90,8 @@ Planned environment variables:
 
 - `QRWATCH_INTERVAL_SECONDS`: screenshot interval.
 - `QRWATCH_DRY_RUN`: when true, do not send external messages.
-- `QRWATCH_NOTIFY_PROVIDER`: `dry_run`, `email`, `webhook`, `qq`, or `wechat`.
+- `QRWATCH_NOTIFY_PROVIDER`: `dry-run`, `email`, `qq-mail`, `qqmail`, `webhook`, `qq`, or `wechat`. Only `dry-run`, `email`, `qq-mail`, and `qqmail` have implemented behavior now.
+- `QRWATCH_SMTP_HOST`, `QRWATCH_SMTP_PORT`, `QRWATCH_SMTP_USERNAME`, `QRWATCH_SMTP_PASSWORD`, `QRWATCH_NOTIFY_TO`: SMTP email notifier settings for live QQ Mail-compatible sends.
 - `QRWATCH_SCREENSHOT_MODE`: `recent`, `detections`, `errors`, or `all`.
 - `QRWATCH_SCREENSHOT_RETENTION_COUNT`: maximum recent screenshots to keep.
 - `QRWATCH_DEDUP_SECONDS`: suppress repeated QR payloads during this window.

@@ -30,7 +30,8 @@ Persistent state should store QR payload hashes by default, not raw payloads.
 ## External Sends
 
 - Dry-run notification is the default development behavior.
-- Real email, QQ, WeChat, or webhook sends require human-provided credentials and a test recipient or endpoint.
+- Real QQ Mail-compatible SMTP sends require `QRWATCH_DRY_RUN=false`, human-provided SMTP credentials, and a test recipient.
+- Real QQ bot, WeChat, or webhook sends remain future provider work and require human-provided credentials and a test target before implementation or validation.
 - Tests must not contact external providers unless explicitly marked and approved for that run.
 - Provider errors should be logged with redacted details.
 

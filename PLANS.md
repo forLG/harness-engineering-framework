@@ -61,7 +61,7 @@ Acceptance criteria:
 
 ### Milestone 5: Notification Provider Interface
 
-Status: planned.
+Status: implemented.
 
 Goal: add safe notification dispatch with dry-run behavior first.
 
@@ -69,7 +69,7 @@ Acceptance criteria:
 
 - `src/qrwatch/notifiers/` defines a provider interface.
 - Dry-run notifier logs redacted event metadata without sending messages.
-- First real provider is selected and implemented, preferably email or webhook before QQ/WeChat.
+- First real provider is selected and implemented: QQ Mail-compatible SMTP email.
 - Real provider tests avoid external sends unless credentials and a test recipient are explicitly supplied by a human.
 
 ### Milestone 6: Background Run Model

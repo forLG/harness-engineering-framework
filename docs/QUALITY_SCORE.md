@@ -90,7 +90,7 @@ python tools/run_evals.py --suite smoke
 - QR fixture images do not exist.
 - Product smoke eval suite does not exist.
 - Secret/screenshot guardrail scanners do not exist.
-- Real notification provider is not selected.
+- QQ Mail-compatible SMTP is the first selected real notification provider; webhook, QQ bot, and WeChat providers remain unimplemented.
 - Packaging and background startup method are not implemented.
 
 ## Next Quality Milestone
