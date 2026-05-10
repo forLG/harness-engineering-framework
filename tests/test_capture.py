@@ -36,6 +36,8 @@ def test_capture_screen_returns_bgr_frame_metadata():
     assert frame.height == 2
     assert frame.source == "monitor:1"
     assert frame.color_format == "BGR"
+    assert frame.captured_at.tzinfo is not None
+    assert frame.captured_at.utcoffset() is not None
     assert frame.pixels.shape == (2, 3, 3)
     assert frame.pixels.flags.c_contiguous
     assert frame.pixels[0, 0].tolist() == [10, 20, 30]

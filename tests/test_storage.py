@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterator
 
 from qrwatch.storage import prune_screenshots, retained_screenshot_path
 
 
-NOW = datetime(2026, 5, 10, 12, tzinfo=timezone.utc)
+NOW = datetime(2026, 5, 10, 12)
 
 
 @contextmanager
@@ -46,7 +46,7 @@ def test_retained_screenshot_path_uses_timestamp_and_source():
         )
 
         assert path.parent == directory
-        assert path.name == "qrwatch-20260510T120000000000Z-monitor-1.png"
+        assert path.name == "qrwatch-20260510T120000000000-monitor-1.png"
 
 
 def test_prune_screenshots_enforces_age_and_count_limits():

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
@@ -66,7 +66,7 @@ def capture_screen(
         height=height,
         source=f"monitor:{monitor_index}",
         pixels=pixels,
-        captured_at=datetime.now(timezone.utc),
+        captured_at=datetime.now().astimezone(),
     )
 
 

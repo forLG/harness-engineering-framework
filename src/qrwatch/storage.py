@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 
@@ -24,7 +24,10 @@ def retained_screenshot_path(
 ) -> Path:
     """Return a deterministic local screenshot path for a captured frame."""
 
-    timestamp = _ensure_utc(captured_at).strftime("%Y%m%dT%H%M%S%fZ")
+    if captured_at.tzinfo is None:
+        timestamp = captured_at.strftime("%Y%m%dT%H%M%S%f")
+    else:
+        timestamp = captured_at.astimezone().strftime("%Y%m%dT%H%M%S%f")
     safe_source = "".join(
         character if character.isalnum() else "-"
         for character in source.lower()
@@ -52,9 +55,10 @@ def prune_screenshots(
         return ScreenshotRetentionSummary(deleted_count=0, retained_count=0)
 
     deleted = 0
-    cutoff = _ensure_utc(now or datetime.now(timezone.utc)) - timedelta(
-        days=max_age_days,
-    )
+    current_time = now or datetime.now().astimezone()
+    if current_time.tzinfo is not None:
+        current_time = current_time.astimezone()
+    cutoff = current_time - timedelta(days=max_age_days)
     cutoff_timestamp = cutoff.timestamp()
     retained: list[Path] = []
 
@@ -77,9 +81,3 @@ def prune_screenshots(
         deleted_count=deleted,
         retained_count=min(len(retained), max_count),
     )
-
-
-def _ensure_utc(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
