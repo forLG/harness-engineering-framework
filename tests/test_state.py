@@ -58,6 +58,18 @@ def test_json_store_notifies_new_payload_and_suppresses_repeat_inside_window():
         assert hash_payload("secret-payload") in raw_state
 
 
+def test_json_store_restart_suppresses_recent_payload():
+    with _state_path("restart.json") as path:
+        first_store = JsonDeduplicationStore(path, window_seconds=60)
+        first_store.filter_events((_event("restart-secret"),))
+
+        restarted_store = JsonDeduplicationStore(path, window_seconds=60)
+        result = restarted_store.filter_events((_event("restart-secret", seconds=5),))
+
+        assert len(result.notification_events) == 0
+        assert len(result.suppressed_events) == 1
+
+
 def test_json_store_notifies_repeat_after_window_expires():
     with _state_path("expiry.json") as path:
         store = JsonDeduplicationStore(path, window_seconds=60)

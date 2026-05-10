@@ -74,12 +74,14 @@ Screenshots are useful observability evidence but can be sensitive and large.
 
 Defaults:
 
-- `recent`: keep last 200 screenshots or 24 hours.
-- `detections`: keep 7 days.
-- `errors`: keep 7 days.
-- `all`: disabled unless explicitly configured for debugging.
+- Automatic screenshot retention is disabled unless
+  `QRWATCH_SAVE_SCREENSHOTS=true`.
+- When enabled, keep the last 200 screenshots or 24 hours by default.
+- `QRWATCH_SCREENSHOT_MAX_COUNT` and `QRWATCH_SCREENSHOT_MAX_AGE_DAYS` control
+  the limits.
 
-Retention cleanup should run at startup and periodically during the worker loop. Cleanup failure should log a warning but should not stop monitoring.
+Retention cleanup runs at startup and after retained screenshot saves. Cleanup
+failure should log a warning but should not stop monitoring.
 
 ## State Recovery
 

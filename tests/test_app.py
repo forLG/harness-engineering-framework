@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 
@@ -151,3 +152,129 @@ def test_capture_once_dispatches_deduplicated_notification_events(monkeypatch):
     assert summary.notification_events_count == 1
     assert summary.notifications_sent == 1
     assert summary.notifications_failed == 0
+
+
+def test_capture_once_saves_retained_screenshot_when_enabled(monkeypatch):
+    captured_at = datetime(2026, 5, 10, 12, tzinfo=timezone.utc)
+    screenshot_dir = Path("artifacts/test-screenshots/app-retention")
+    screenshot_dir.mkdir(parents=True, exist_ok=True)
+    for path in screenshot_dir.iterdir():
+        if path.is_file():
+            path.unlink()
+    frame = Frame(
+        width=4,
+        height=3,
+        source="monitor:1",
+        pixels=np.zeros((3, 4, 3), dtype=np.uint8),
+        captured_at=captured_at,
+    )
+    saved_paths = []
+
+    monkeypatch.setattr(
+        "qrwatch.app.capture_screen",
+        lambda *, monitor_index: frame,
+    )
+    monkeypatch.setattr(
+        "qrwatch.app.detect_qr_codes",
+        lambda pixels, *, source: (),
+    )
+
+    def fake_save_frame_png(frame, output_path):
+        saved_paths.append(output_path)
+        output_path.write_bytes(b"png")
+        return output_path
+
+    monkeypatch.setattr("qrwatch.app.save_frame_png", fake_save_frame_png)
+
+    config = load_config(
+        env={
+            "QRWATCH_SCREENSHOT_DIR": str(screenshot_dir),
+            "QRWATCH_SAVE_SCREENSHOTS": "true",
+            "QRWATCH_SCREENSHOT_MAX_COUNT": "10",
+            "QRWATCH_SCREENSHOT_MAX_AGE_DAYS": "1",
+        }
+    )
+    app = QRWatchApp(config)
+
+    summary = app.capture_once()
+
+    assert len(saved_paths) == 1
+    assert saved_paths[0].parent == screenshot_dir
+    assert saved_paths[0].name.endswith("-monitor-1.png")
+    assert summary.capture_saved_path == saved_paths[0]
+    assert saved_paths[0].exists()
+
+    saved_paths[0].unlink()
+    try:
+        screenshot_dir.rmdir()
+    except OSError:
+        pass
+
+
+def test_capture_once_counts_notification_failures(monkeypatch):
+    captured_at = datetime(2026, 5, 10, tzinfo=timezone.utc)
+    frame = Frame(
+        width=4,
+        height=3,
+        source="monitor:1",
+        pixels=np.zeros((3, 4, 3), dtype=np.uint8),
+        captured_at=captured_at,
+    )
+
+    monkeypatch.setattr(
+        "qrwatch.app.capture_screen",
+        lambda *, monitor_index: frame,
+    )
+    monkeypatch.setattr(
+        "qrwatch.app.detect_qr_codes",
+        lambda pixels, *, source: (
+            QRDetection(
+                payload="qrwatch:test-payload",
+                source=source,
+                corners=(),
+            ),
+        ),
+    )
+
+    class FakeStateStore:
+        def filter_events(self, events):
+            return DeduplicationResult(
+                decisions=(
+                    DeduplicationDecision(
+                        event=events[0],
+                        payload_seen_before=False,
+                        should_notify=True,
+                        reason="new payload",
+                    ),
+                )
+            )
+
+    class FailingNotifier:
+        provider_name = "email"
+
+        def notify(self, event):
+            from qrwatch.notifiers.base import NotificationResult
+
+            return NotificationResult(
+                provider_name=self.provider_name,
+                sent=False,
+                dry_run=False,
+                payload_hash=event.payload_hash,
+                payload_length=len(event.payload),
+                error="TimeoutError",
+            )
+
+        def notify_dry_run(self):
+            raise AssertionError("capture_once should dispatch event notifications")
+
+    app = QRWatchApp(
+        load_config(env={}),
+        state_store=FakeStateStore(),
+        notifier=FailingNotifier(),
+    )
+
+    summary = app.capture_once()
+
+    assert summary.notification_events_count == 1
+    assert summary.notifications_sent == 0
+    assert summary.notifications_failed == 1

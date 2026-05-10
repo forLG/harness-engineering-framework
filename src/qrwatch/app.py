@@ -13,6 +13,7 @@ from qrwatch.events import shape_detection_events
 from qrwatch.notifiers import create_notifier
 from qrwatch.notifiers.base import NotificationResult
 from qrwatch.state import JsonDeduplicationStore
+from qrwatch.storage import prune_screenshots, retained_screenshot_path
 
 
 @dataclass(frozen=True)
@@ -68,7 +69,7 @@ class QRWatchApp:
         monitor_index: int = 1,
         save_path: str | Path | None = None,
     ) -> RunSummary:
-        """Capture one screen frame without saving it or sending notifications."""
+        """Capture one screen frame, detect QR codes, and dispatch notifications."""
 
         frame = capture_screen(monitor_index=monitor_index)
         detections = detect_qr_codes(frame.pixels, source=frame.source)
@@ -78,7 +79,7 @@ class QRWatchApp:
             self.notifier.notify(event)
             for event in deduplication.notification_events
         )
-        saved_path = save_frame_png(frame, save_path) if save_path is not None else None
+        saved_path = self._save_capture_if_configured(frame, save_path=save_path)
         return RunSummary(
             dry_run=self.config.dry_run,
             interval_seconds=self.config.interval_seconds,
@@ -98,6 +99,35 @@ class QRWatchApp:
             notifications_sent=count_sent(notification_results),
             notifications_failed=count_failed(notification_results),
         )
+
+    def prune_screenshots(self) -> None:
+        """Apply configured screenshot retention limits."""
+
+        prune_screenshots(
+            self.config.screenshot_dir,
+            max_count=self.config.screenshot_max_count,
+            max_age_days=self.config.screenshot_max_age_days,
+        )
+
+    def _save_capture_if_configured(
+        self,
+        frame,
+        *,
+        save_path: str | Path | None,
+    ) -> Path | None:
+        if save_path is not None:
+            return save_frame_png(frame, save_path)
+        if not self.config.save_screenshots:
+            return None
+
+        path = retained_screenshot_path(
+            self.config.screenshot_dir,
+            captured_at=frame.captured_at,
+            source=frame.source,
+        )
+        saved_path = save_frame_png(frame, path)
+        self.prune_screenshots()
+        return saved_path
 
 
 def count_sent(results: tuple[NotificationResult, ...]) -> int:

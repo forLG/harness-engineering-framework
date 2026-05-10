@@ -4,7 +4,7 @@ import threading
 from pathlib import Path
 
 from qrwatch.app import RunSummary
-from qrwatch.background import BackgroundController, STATUS_STOPPED
+from qrwatch.background import BackgroundController, STATUS_DEGRADED, STATUS_STOPPED
 from qrwatch.config import load_config
 
 
@@ -77,3 +77,20 @@ def test_background_controller_redacts_configured_secrets():
 
     assert controller.capture_now() is None
     assert controller.last_error == "failed for [redacted]"
+
+
+def test_background_controller_marks_degraded_after_capture_failure():
+    config = load_config(env={})
+
+    class FakeApp:
+        def __init__(self):
+            self.config = config
+
+        def capture_once(self, *, monitor_index):
+            raise RuntimeError("detector unavailable")
+
+    controller = BackgroundController(FakeApp())
+
+    assert controller.capture_now() is None
+    assert controller.status == STATUS_DEGRADED
+    assert controller.last_error == "detector unavailable"

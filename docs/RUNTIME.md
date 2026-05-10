@@ -95,10 +95,31 @@ Planned environment variables:
 - `QRWATCH_MONITOR_INDEX`: mss monitor index, defaulting to `1`.
 - `QRWATCH_LOG_DIR`: local log directory.
 - `QRWATCH_SCREENSHOT_DIR`: local screenshot folder opened by tray controls.
+- `QRWATCH_SAVE_SCREENSHOTS`: when true, capture cycles save retained screenshots locally; default is false.
+- `QRWATCH_SCREENSHOT_MAX_COUNT`: maximum retained screenshots; default is 200.
+- `QRWATCH_SCREENSHOT_MAX_AGE_DAYS`: maximum retained screenshot age in days; default is 1.
 - `QRWATCH_DEDUP_WINDOW_SECONDS`: suppress repeated QR payloads during this window.
 - `QRWATCH_LOG_LEVEL`: `DEBUG`, `INFO`, `WARNING`, or `ERROR`.
 
 Provider-specific credentials stay in local env/config only and must never be committed.
+
+## Privacy And Retention
+
+QR payloads are stored in deduplication state as SHA-256 hashes only. Raw
+payloads may exist in memory while shaping events and sending a notification,
+but they are not written to the JSON state file or dry-run logs.
+
+Automatic screenshot retention is disabled by default. If
+`QRWATCH_SAVE_SCREENSHOTS=true`, QR Watch writes PNG files under
+`QRWATCH_SCREENSHOT_DIR` and prunes them by both `QRWATCH_SCREENSHOT_MAX_COUNT`
+and `QRWATCH_SCREENSHOT_MAX_AGE_DAYS` at startup and after retained saves.
+Explicit `--save-capture PATH` one-shot captures still write only to the
+requested path.
+
+Generated packaging output is not part of the default runtime. Current commands
+run from the Python package; future executable or installer output should be
+documented before it is shared and kept under ignored build folders such as
+`dist/` or `build/`.
 
 ## Harness Invocation Modes
 

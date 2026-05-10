@@ -19,7 +19,8 @@ QR Watch observes the user's desktop and may send messages through external prov
 - Notification destinations may reveal personal accounts.
 - Provider configuration may include credentials and stable endpoint URLs.
 
-Persistent state should store QR payload hashes by default, not raw payloads.
+Persistent state stores QR payload hashes by default, not raw payloads. Storing
+raw QR payloads is a policy change that requires human approval.
 
 ## Permissions
 
@@ -38,7 +39,9 @@ Persistent state should store QR payload hashes by default, not raw payloads.
 ## Screenshot Handling
 
 - Real app screenshots live under `%LOCALAPPDATA%\QRWatch\screenshots\`.
-- Screenshot retention must enforce count and age limits.
+- Automatic screenshot retention is disabled by default.
+- When `QRWATCH_SAVE_SCREENSHOTS=true`, screenshot retention enforces
+  `QRWATCH_SCREENSHOT_MAX_COUNT` and `QRWATCH_SCREENSHOT_MAX_AGE_DAYS`.
 - Repository `artifacts/screenshots/` is only for explicit validation evidence.
 - Do not upload, commit, or share screenshots automatically.
 - Before preserving screenshot evidence in the repository, review or redact sensitive content.

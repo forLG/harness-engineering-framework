@@ -19,6 +19,9 @@ DEFAULT_SMTP_PORT = 465
 DEFAULT_SMTP_TIMEOUT_SECONDS = 10.0
 DEFAULT_MONITOR_INDEX = 1
 DEFAULT_LOG_LEVEL = "INFO"
+DEFAULT_SAVE_SCREENSHOTS = False
+DEFAULT_SCREENSHOT_MAX_COUNT = 200
+DEFAULT_SCREENSHOT_MAX_AGE_DAYS = 1.0
 
 ENV_CONFIG_FILE = "QRWATCH_CONFIG_FILE"
 ENV_INTERVAL_SECONDS = "QRWATCH_INTERVAL_SECONDS"
@@ -29,6 +32,9 @@ ENV_DEDUP_WINDOW_SECONDS = "QRWATCH_DEDUP_WINDOW_SECONDS"
 ENV_STATE_PATH = "QRWATCH_STATE_PATH"
 ENV_LOG_DIR = "QRWATCH_LOG_DIR"
 ENV_SCREENSHOT_DIR = "QRWATCH_SCREENSHOT_DIR"
+ENV_SAVE_SCREENSHOTS = "QRWATCH_SAVE_SCREENSHOTS"
+ENV_SCREENSHOT_MAX_COUNT = "QRWATCH_SCREENSHOT_MAX_COUNT"
+ENV_SCREENSHOT_MAX_AGE_DAYS = "QRWATCH_SCREENSHOT_MAX_AGE_DAYS"
 ENV_LOG_LEVEL = "QRWATCH_LOG_LEVEL"
 ENV_MONITOR_INDEX = "QRWATCH_MONITOR_INDEX"
 ENV_SMTP_HOST = "QRWATCH_SMTP_HOST"
@@ -58,6 +64,9 @@ class AppConfig:
     screenshot_dir: Path = field(
         default_factory=lambda: default_screenshot_dir(os.environ)
     )
+    save_screenshots: bool = DEFAULT_SAVE_SCREENSHOTS
+    screenshot_max_count: int = DEFAULT_SCREENSHOT_MAX_COUNT
+    screenshot_max_age_days: float = DEFAULT_SCREENSHOT_MAX_AGE_DAYS
     log_level: str = DEFAULT_LOG_LEVEL
     monitor_index: int = DEFAULT_MONITOR_INDEX
     smtp_host: str = DEFAULT_SMTP_HOST
@@ -85,6 +94,10 @@ class AppConfig:
             raise ConfigError("monitor index must be zero or greater")
         if self.log_level.strip().upper() not in {"DEBUG", "INFO", "WARNING", "ERROR"}:
             raise ConfigError("log level must be DEBUG, INFO, WARNING, or ERROR")
+        if self.screenshot_max_count <= 0:
+            raise ConfigError("screenshot max count must be greater than zero")
+        if self.screenshot_max_age_days <= 0:
+            raise ConfigError("screenshot max age must be greater than zero days")
         if self.smtp_port <= 0:
             raise ConfigError("SMTP port must be greater than zero")
         if not self.smtp_host.strip():
@@ -143,6 +156,9 @@ def load_config(
                 ENV_STATE_PATH,
                 ENV_LOG_DIR,
                 ENV_SCREENSHOT_DIR,
+                ENV_SAVE_SCREENSHOTS,
+                ENV_SCREENSHOT_MAX_COUNT,
+                ENV_SCREENSHOT_MAX_AGE_DAYS,
                 ENV_LOG_LEVEL,
                 ENV_MONITOR_INDEX,
                 ENV_SMTP_HOST,
@@ -180,6 +196,20 @@ def load_config(
         log_dir=Path(values.get(ENV_LOG_DIR) or str(default_log_dir(current_env))),
         screenshot_dir=Path(
             values.get(ENV_SCREENSHOT_DIR) or str(default_screenshot_dir(current_env))
+        ),
+        save_screenshots=parse_bool(
+            values.get(ENV_SAVE_SCREENSHOTS, str(DEFAULT_SAVE_SCREENSHOTS))
+        ),
+        screenshot_max_count=parse_positive_int(
+            values.get(ENV_SCREENSHOT_MAX_COUNT, str(DEFAULT_SCREENSHOT_MAX_COUNT)),
+            name="screenshot max count",
+        ),
+        screenshot_max_age_days=parse_positive_float(
+            values.get(
+                ENV_SCREENSHOT_MAX_AGE_DAYS,
+                str(DEFAULT_SCREENSHOT_MAX_AGE_DAYS),
+            ),
+            name="screenshot max age",
         ),
         log_level=values.get(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL).strip().upper(),
         monitor_index=parse_non_negative_int(

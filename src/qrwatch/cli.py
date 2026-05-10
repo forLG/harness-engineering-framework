@@ -15,6 +15,8 @@ from qrwatch.config import (
     parse_credential_sources,
     parse_dedup_window,
     parse_non_negative_int,
+    parse_positive_float,
+    parse_positive_int,
 )
 from qrwatch.detectors import DetectorBackendUnavailable, QRDetectionError
 
@@ -94,6 +96,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory opened by tray screenshot controls.",
     )
     parser.add_argument(
+        "--save-screenshots",
+        action="store_true",
+        default=None,
+        help="Retain captured screenshots under the configured screenshot directory.",
+    )
+    parser.add_argument(
+        "--no-save-screenshots",
+        action="store_false",
+        dest="save_screenshots",
+        help="Disable automatic screenshot retention.",
+    )
+    parser.add_argument(
+        "--screenshot-max-count",
+        help="Maximum retained screenshots in the screenshot directory.",
+    )
+    parser.add_argument(
+        "--screenshot-max-age-days",
+        help="Maximum retained screenshot age in days.",
+    )
+    parser.add_argument(
         "--log-level",
         choices=("DEBUG", "INFO", "WARNING", "ERROR"),
         help="Log verbosity for background and tray runs.",
@@ -140,6 +162,27 @@ def main(argv: Sequence[str] | None = None) -> int:
             config = replace(config, log_dir=args.log_dir).validated()
         if args.screenshot_dir is not None:
             config = replace(config, screenshot_dir=args.screenshot_dir).validated()
+        if args.save_screenshots is not None:
+            config = replace(
+                config,
+                save_screenshots=args.save_screenshots,
+            ).validated()
+        if args.screenshot_max_count is not None:
+            config = replace(
+                config,
+                screenshot_max_count=parse_positive_int(
+                    args.screenshot_max_count,
+                    name="screenshot max count",
+                ),
+            ).validated()
+        if args.screenshot_max_age_days is not None:
+            config = replace(
+                config,
+                screenshot_max_age_days=parse_positive_float(
+                    args.screenshot_max_age_days,
+                    name="screenshot max age",
+                ),
+            ).validated()
         if args.log_level is not None:
             config = replace(config, log_level=args.log_level).validated()
         if args.monitor is not None:

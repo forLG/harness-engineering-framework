@@ -118,6 +118,45 @@ def test_cli_applies_deduplication_options(monkeypatch):
     assert main(["--dedup-window", "42", "--state-path", str(state_path)]) == 0
 
 
+def test_cli_applies_screenshot_retention_options(monkeypatch):
+    screenshot_dir = Path("artifacts/test-screenshots/cli-retention")
+
+    class FakeApp:
+        def __init__(self, config):
+            assert config.save_screenshots is True
+            assert config.screenshot_dir == screenshot_dir
+            assert config.screenshot_max_count == 5
+            assert config.screenshot_max_age_days == 0.5
+            self.config = config
+
+        def run_once(self):
+            from qrwatch.app import RunSummary
+
+            return RunSummary(
+                dry_run=True,
+                interval_seconds=self.config.interval_seconds,
+                notifier_provider=self.config.notifier_provider,
+                credential_sources=self.config.credential_sources,
+            )
+
+    monkeypatch.setattr("qrwatch.cli.QRWatchApp", FakeApp)
+
+    assert (
+        main(
+            [
+                "--save-screenshots",
+                "--screenshot-dir",
+                str(screenshot_dir),
+                "--screenshot-max-count",
+                "5",
+                "--screenshot-max-age-days",
+                "0.5",
+            ]
+        )
+        == 0
+    )
+
+
 def test_cli_run_starts_background_controller(monkeypatch):
     import qrwatch.background
     import qrwatch.logging

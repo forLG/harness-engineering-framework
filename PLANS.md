@@ -87,14 +87,34 @@ Acceptance criteria:
 
 ### Milestone 7: Privacy, Reliability, And Packaging
 
-Status: planned.
+Status: implemented.
 
 Goal: harden the app before real personal use.
 
 Acceptance criteria:
 
 - Screenshots are retained locally with count and age limits.
-- QR payload storage policy is explicit: store raw, hash, redact, or discard.
+- QR payload storage policy is explicit: deduplication state stores hashes only.
 - Notification credentials are never committed or written to artifacts.
 - Packaging output and generated files are documented.
 - Tests and manual validation cover normal operation, detector failures, notification failures, and restart behavior.
+
+### Milestone 8: Windows Executable Packaging
+
+Status: planned.
+
+Goal: make QR Watch installable or directly runnable as a repeatable Windows executable build.
+
+Acceptance criteria:
+
+- A packaging entrypoint exists for starting the tray app from a bundled executable.
+- PyInstaller or an equivalent Windows packaging tool is configured through a tracked spec/script.
+- Build output locations are documented and ignored by Git.
+- Runtime config, logs, dedup state, and optional screenshots still default to `%LOCALAPPDATA%\QRWatch\`.
+- The packaged app reads editable external configuration from `%LOCALAPPDATA%\QRWatch\config.env` by default, while still supporting `--config PATH` and `QRWATCH_CONFIG_FILE`.
+- If `%LOCALAPPDATA%\QRWatch\config.env` does not exist, the packaged app creates a safe starter config with dry-run mode enabled and no credentials.
+- Packaged configuration changes such as screenshot interval, monitor index, notifier provider, and screenshot retention are applied after restarting the app.
+- The tray UI exposes an Open settings file action for the active config file.
+- The packaged app starts in dry-run mode by default and does not require credentials to launch.
+- A local build command creates a Windows executable from the `qrwatch` Conda environment.
+- Packaging validation covers executable startup, tray launch, one-shot capture where feasible, and no committed credentials or screenshots.

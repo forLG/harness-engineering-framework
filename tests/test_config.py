@@ -17,6 +17,9 @@ def test_load_config_defaults_to_safe_dry_run():
     assert config.smtp_use_ssl is True
     assert config.log_level == "INFO"
     assert config.monitor_index == 1
+    assert config.save_screenshots is False
+    assert config.screenshot_max_count == 200
+    assert config.screenshot_max_age_days == 1.0
 
 
 def test_load_config_from_env():
@@ -32,6 +35,9 @@ def test_load_config_from_env():
             "QRWATCH_STATE_PATH": str(state_path),
             "QRWATCH_LOG_DIR": "artifacts/test-logs",
             "QRWATCH_SCREENSHOT_DIR": "artifacts/test-screenshots",
+            "QRWATCH_SAVE_SCREENSHOTS": "true",
+            "QRWATCH_SCREENSHOT_MAX_COUNT": "12",
+            "QRWATCH_SCREENSHOT_MAX_AGE_DAYS": "2.5",
             "QRWATCH_LOG_LEVEL": "debug",
             "QRWATCH_MONITOR_INDEX": "0",
             "QRWATCH_SMTP_HOST": "smtp.example.test",
@@ -53,6 +59,9 @@ def test_load_config_from_env():
     assert config.state_path == state_path
     assert config.log_dir == Path("artifacts/test-logs")
     assert config.screenshot_dir == Path("artifacts/test-screenshots")
+    assert config.save_screenshots is True
+    assert config.screenshot_max_count == 12
+    assert config.screenshot_max_age_days == 2.5
     assert config.log_level == "DEBUG"
     assert config.monitor_index == 0
     assert config.smtp_host == "smtp.example.test"
@@ -98,6 +107,14 @@ def test_rejects_invalid_dedup_window():
 def test_rejects_invalid_monitor_index():
     with pytest.raises(ConfigError, match="monitor index"):
         load_config(env={"QRWATCH_MONITOR_INDEX": "-1"})
+
+
+def test_rejects_invalid_screenshot_retention():
+    with pytest.raises(ConfigError, match="screenshot max count"):
+        load_config(env={"QRWATCH_SCREENSHOT_MAX_COUNT": "0"})
+
+    with pytest.raises(ConfigError, match="screenshot max age"):
+        load_config(env={"QRWATCH_SCREENSHOT_MAX_AGE_DAYS": "0"})
 
 
 def test_rejects_live_dry_run_provider():

@@ -144,6 +144,17 @@ class BackgroundController:
 
     def _run_loop(self) -> None:
         self._set_status(STATUS_RUNNING)
+        if hasattr(self.app, "prune_screenshots"):
+            try:
+                self.app.prune_screenshots()
+            except Exception as exc:
+                self.last_error = redact_error(exc, self._secret_values())
+                self._set_status(STATUS_DEGRADED)
+                LOGGER.warning(
+                    "screenshot retention cleanup failed error=%s",
+                    self.last_error,
+                )
+
         LOGGER.info(
             "background monitoring started provider=%s dry_run=%s "
             "interval_seconds=%s monitor_index=%s log_dir=%s screenshot_dir=%s",
