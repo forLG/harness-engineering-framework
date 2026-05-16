@@ -1,125 +1,65 @@
 # Runtime
 
-Status: scaffold.
+Status: lightweight scaffold.
 
-This harness uses Codex as the worker agent and a repository-local supervisor script as the outer loop. Codex handles implementation, validation, review, and follow-up planning. The supervisor chooses queued tasks, invokes role-specific agents, captures artifacts, moves task state, and queues follow-up work.
+This document records how the target project runs. It should describe product or application runtime behavior, not the human/Codex collaboration process.
 
-## Invocation Modes
+Fill project-specific commands and runtime facts after the scaffold is applied to a real codebase.
 
-- Human-supervised interactive runs: `codex -C <project>`.
-- One-shot non-interactive runs: `codex exec --full-auto -C <project> "<prompt>"`.
-- Harness task loop preview: `python tools/harness_loop.py --once`.
-- Harness task loop execution: `python tools/harness_loop.py --once --execute`.
-- Harness task loop with successful-run commits: `python tools/harness_loop.py --once --execute --auto-commit`.
-- Batch execution: `python tools/harness_loop.py --until-empty --execute --max-tasks 5`.
-- Harness smoke evals: `python tools/run_evals.py --suite smoke`.
-- Entropy report: `python tools/entropy_control.py --report`.
-- Entropy report with queued cleanup tasks: `python tools/entropy_control.py --report --queue-tasks`.
-- Entropy report with quality score refresh: `python tools/entropy_control.py --report --update-quality-score`.
+## Runtime Model
 
-The supervisor defaults to preview mode. It writes the prompts it would send to Codex without moving task state or invoking the agent.
+- `PROJECT_PLACEHOLDER(runtime-model): describe whether the project runs as a web app, CLI, desktop app, service, worker, library, package, scheduled job, or another runtime shape.`
+- `PROJECT_PLACEHOLDER(process-model): describe long-running processes, background workers, service managers, task schedulers, or user-session requirements.`
+- `PROJECT_PLACEHOLDER(startup-order): list startup order for apps, services, databases, queues, browsers, or emulators.`
 
-When `--execute` is used, the supervisor invokes role agents with `codex exec --full-auto -C <repo> ...`. `--full-auto` is the sandboxed low-friction Codex mode; it is not the dangerous approval-and-sandbox bypass mode.
+## Entrypoints
 
-## Runner Entrypoints
+Fill only commands discovered from repository files or safe command output.
 
-- `tools/harness_loop.py`: Ralph-style outer loop supervisor.
-- `tools/run_evals.py`: eval runner for benchmark definitions under `evals/benchmarks/`.
-- `tools/entropy_control.py`: maintenance runner for stale docs, doc overlap, bad harness code, queue health, artifact hygiene, eval drift, and quality scoring.
-- `tools/validate_harness_structure.py`: structural and guardrail validator for required harness files, directories, and task state.
-- `tools/validate_guardrails.py`: task schema, naming, and status-directory validator used by the structural validator.
-- `runtime/tasks/TASK_SCHEMA.md`: task file contract.
-- `docs/agent-roles/*.md`: role-specific responsibilities and machine-readable output contracts.
+- Development: `PROJECT_PLACEHOLDER(dev-command): local development server, app, CLI, or worker command.`
+- Production-like run: `PROJECT_PLACEHOLDER(run-command): command that starts the project in its normal runtime mode.`
+- Debug run: `PROJECT_PLACEHOLDER(debug-command): useful local reproduction or verbose logging command.`
+- One-shot or maintenance command: `PROJECT_PLACEHOLDER(one-shot-command): migrations, jobs, scripts, packaging, or administrative commands.`
 
-## Task Loop
+## Configuration
 
-The outer loop is:
+- `PROJECT_PLACEHOLDER(config-files): runtime config files, search order, and defaults.`
+- `PROJECT_PLACEHOLDER(environment-variables): environment variables used at runtime, with safe defaults and secret handling.`
+- `PROJECT_PLACEHOLDER(feature-flags): feature flags, modes, profiles, or environment names.`
+- `PROJECT_PLACEHOLDER(config-reload): whether config changes require restart, reload, rebuild, or redeploy.`
 
-1. Select the next `queued` task from `runtime/tasks/queue/`.
-2. Create `artifacts/runs/<timestamp>-<task-id>/`.
-3. Move the task to `runtime/tasks/active/` when `--execute` is used.
-4. Invoke the implementer role with `docs/agent-roles/implementer.md`.
-5. Invoke the validator role with `docs/agent-roles/validator.md`.
-6. Invoke the reviewer role with `docs/agent-roles/reviewer.md`.
-7. If validation fails or review requests follow-up, invoke `docs/agent-roles/followup-planner.md`.
-8. Convert planner output into new task files in `runtime/tasks/queue/`.
-9. Move the original task to `runtime/tasks/completed/` or `runtime/tasks/blocked/`.
-10. Save `summary.json` and all role outputs under the run artifact directory.
-11. When auto-commit is enabled and the run succeeded, run `git add --all .` and `git commit`.
+## Local Services And Ports
 
-Entropy control is outside the core implementation path. Run `tools/entropy_control.py` directly for scheduled or batch maintenance.
+- `PROJECT_PLACEHOLDER(local-services): databases, queues, browsers, emulators, containers, or background services required at runtime.`
+- `PROJECT_PLACEHOLDER(ports): local ports, conflict policy, hostnames, and health endpoints.`
+- `PROJECT_PLACEHOLDER(service-health): commands or URLs that prove services are ready.`
 
-Each role must end with `HARNESS_RESULT_JSON:` followed by valid JSON. The supervisor uses that final line to decide the next state.
+## Runtime State
 
-## Automatic Git Commits
+- `PROJECT_PLACEHOLDER(runtime-state): local databases, caches, queues, generated files, browser storage, or service state.`
+- `PROJECT_PLACEHOLDER(state-location): filesystem paths, database names, buckets, queues, or external stores.`
+- `PROJECT_PLACEHOLDER(state-reset): safe local reset commands and data-loss warnings.`
 
-Automatic commits are a supervisor capability, not an implementer-agent responsibility. Enable them in either of two ways:
+## Logs And Diagnostics
 
-- Pass `--auto-commit` to commit every successful task run.
-- Add task metadata such as `"commit_policy": "on_success"` or `"commit_policy": {"mode": "on_success", "message": "feat: {title}"}`.
-- Add `"commit_type": "docs"` when the task should use that functional prefix but does not need a full custom message.
+- `PROJECT_PLACEHOLDER(log-locations): local app, service, worker, browser, or package logs.`
+- `PROJECT_PLACEHOLDER(log-levels): supported log levels and how to enable verbose diagnostics.`
+- `PROJECT_PLACEHOLDER(diagnostic-commands): commands that inspect status, health, state, queues, or background jobs.`
 
-The loop commits only after the validator returns `passed` and the reviewer returns `approved`. It does not commit blocked runs, failed validation, or runs that created follow-up work.
+Detailed evidence and retention rules live in `docs/OBSERVABILITY.md`.
 
-Auto-commit preflight requires a clean Git worktree before the task starts. If the tree already has modified, staged, or untracked files, the supervisor stops before invoking Codex so unrelated human work is not included in the automated commit.
+## Failure And Stop Conditions
 
-Automatic commit messages follow the functional prefix policy in `docs/OPERATIONS.md`. If no task-level message is supplied, the loop uses `chore: complete {task_id}`.
+- `PROJECT_PLACEHOLDER(normal-stop): how to stop the app or service cleanly.`
+- `PROJECT_PLACEHOLDER(restart-behavior): when restart is required and how state survives restart.`
+- `PROJECT_PLACEHOLDER(recoverable-failures): failures the project can log and continue after.`
+- `PROJECT_PLACEHOLDER(unrecoverable-failures): failures that should stop startup or require human action.`
+- `PROJECT_PLACEHOLDER(timeout-policy): request, job, worker, or startup timeout expectations.`
 
-## Human Interaction
+## Deployment Or Packaging Runtime
 
-Humans can supervise at three points:
+Fill only when the target project has deployable or packaged runtime behavior:
 
-- Before execution: run `python tools/harness_loop.py --once` to inspect prompts.
-- During execution: the supervisor uses Codex `--full-auto`, so safe workspace commands can run without an interactive approval prompt while still using Codex sandboxing.
-- After execution: inspect `artifacts/runs/<run-id>/summary.json`, role outputs, and queued follow-up tasks.
-
-The loop must stop or mark a task `blocked` when a role requests human escalation.
-
-## State and Artifacts
-
-- Task queue: `runtime/tasks/queue/`
-- Active tasks: `runtime/tasks/active/`
-- Completed tasks: `runtime/tasks/completed/`
-- Blocked tasks: `runtime/tasks/blocked/`
-- Active run artifacts: `artifacts/runs/`. The supervisor writes role prompts, role outputs, and `summary.json` here.
-- Reserved review artifacts: `artifacts/reviews/`. Current reviewer output is stored under each run directory unless a task needs separate review evidence.
-- Reserved validation artifacts: `artifacts/validation/`. Current validator output is stored under each run directory unless a task needs separate validation evidence.
-- Reserved logs: `artifacts/logs/`. Use only for logs that need to outlive a local command or explain a decision.
-- Reserved traces: `artifacts/traces/`. Use only for execution traces or timeline data that should be preserved.
-- Reserved screenshots: `artifacts/screenshots/`. Use for browser or UI verification evidence.
-- Eval results: `evals/results/`
-- Maintenance reports: `artifacts/maintenance/`
-
-## Entropy Control Loop
-
-The entropy loop has four phases:
-
-1. Deterministic report: `tools/entropy_control.py --report` scans for documentation overlap, placeholders, broken local references, undocumented tools, Python compile failures, task queue health, run summary hygiene, eval baseline drift, and quality score inputs.
-2. Queued cleanup tasks: `--queue-tasks` converts high- and medium-severity findings into normal task JSON files under `runtime/tasks/queue/`.
-3. Maintenance planning: `docs/agent-roles/maintenance-planner.md` is available for semantic triage when findings need judgment, grouping, or escalation.
-4. Maintenance scheduling: run `tools/entropy_control.py --report` or `tools/entropy_control.py --report --queue-tasks` outside the task loop when cleanup checks are needed.
-
-The entropy tool must not silently delete artifacts, rewrite broad documentation, or mutate product code. It reports, refreshes quality scoring when explicitly requested, and queues work for the existing implementer, validator, and reviewer flow.
-
-## Eval Loop
-
-The eval runner stages benchmark tasks into `runtime/tasks/queue/`, gives them a high-priority value so they are selected ahead of normal work, runs the harness loop or deterministic commands, checks required artifacts, records latency and status, then removes the staged eval task.
-
-Smoke evals run in preview mode and do not invoke Codex. By default, suite results are compared against `evals/baselines/<suite>.json`; use `--update-baseline` only after a known-good pass. Product-specific suites may add execute-mode benchmarks later, but those should define cost, latency, sandbox, and approval expectations before being used in CI.
-
-## Stop Conditions
-
-- Success: validator returns `passed` and reviewer returns `approved`.
-- Follow-up: validator returns `failed` or reviewer returns `needs_followup`; the planner may create new queued tasks.
-- Blocked: any role returns `blocked`, Codex is unavailable, auto-commit preflight fails, or required human input is needed.
-- Retry: create a follow-up task instead of silently rerunning the same task.
-- Timeout: `FRAMEWORK_TODO(timeout-policy): add subprocess timeout and task retry metadata after the first real run.`
-
-## Open Decisions
-
-- Codex invocation method: `codex exec --full-auto -C <repo> "<assembled prompt>"` for supervisor execute mode.
-- Interactive command: `codex -C <repo>`.
-- Non-interactive command: managed by `tools/harness_loop.py`.
-- Approval policy: supervisor execute mode uses Codex's sandboxed `--full-auto` mode by default, plus role-level escalation rules; auto-commit is local-only and never pushes.
-- JSON or trace format: role outputs use `HARNESS_RESULT_JSON`; run summary uses JSON.
-- Resume strategy: continue from task files and artifacts, not hidden process memory.
+- `PROJECT_PLACEHOLDER(build-output): generated runtime package, executable, container, or artifact locations.`
+- `PROJECT_PLACEHOLDER(deploy-runtime): production, staging, desktop, mobile, or package runtime differences.`
+- `PROJECT_PLACEHOLDER(rollback-or-uninstall): rollback, uninstall, downgrade, or cleanup behavior.`

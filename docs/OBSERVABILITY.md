@@ -1,52 +1,43 @@
 # Observability
 
-Status: scaffold.
+Status: lightweight scaffold.
 
-The active harness loop stores its normal role prompts, role outputs, and run summaries under
-`artifacts/runs/<run-id>/`. The locations below are reserved evidence buckets. They may contain
-only `.gitkeep` until a real project or task has logs, traces, screenshots, or standalone
-validation/review output worth preserving outside the run directory.
+This document defines where to keep logs, screenshots, traces, and validation evidence that are useful to future humans or agents.
 
-## Logs
+## Evidence Policy
 
-- Location: `artifacts/logs/`
-- Current use: reserved.
-- Format: `PROJECT_PLACEHOLDER(log-format): define log format, naming, and minimum fields for the target project.`
-- Retention: keep logs that explain a decision, regression, or human escalation.
+Preserve evidence when it explains:
 
-## Traces
+- A decision.
+- A regression.
+- A manual validation result.
+- A failure that future work may need to reproduce.
+- A security, privacy, or reliability judgment.
 
-- Location: `artifacts/traces/`
-- Current use: reserved.
-- Format: `PROJECT_PLACEHOLDER(trace-format): define trace format, timeline schema, and correlation identifiers for the target project.`
-- Retention: keep traces that explain behavior across agent steps, tools, services, or UI flows.
+Do not preserve evidence just because a command produced output. Keep artifacts small, reviewed, and free of secrets or sensitive personal data.
 
-## Screenshots and UI Artifacts
+## Repository Evidence
 
-- Location: `artifacts/screenshots/`
-- Current use: reserved.
-- Browser tooling: `PROJECT_PLACEHOLDER(browser-tooling): define Playwright, browser, device, or screenshot tooling used by the target project.`
-- Required viewports: `PROJECT_PLACEHOLDER(required-viewports): define required desktop, tablet, mobile, and accessibility verification surfaces.`
+- `artifacts/`: ignored local evidence root.
+- `artifacts/test-*`: suggested prefix for local test output.
+- `artifacts/screenshots/`: optional UI screenshots when a task needs visual proof.
+- `artifacts/logs/`: optional logs worth keeping beyond the local command.
+- `artifacts/traces/`: optional traces or timelines worth keeping.
 
-## Review and Validation Evidence
+Create subdirectories as needed for the project. Keep a short note with any artifact whose purpose is not obvious.
 
-- Review artifact location: `artifacts/reviews/`
-- Validation artifact location: `artifacts/validation/`
-- Current use: reserved. The current supervisor writes reviewer and validator outputs to
-  `artifacts/runs/<run-id>/`; use these standalone directories only when evidence should be
-  shared across runs or preserved separately from a single task run.
+## Project Observability
 
-## Local Reproducibility
+Fill after applying the scaffold:
 
-Document how to reproduce a task run, including environment setup, services, ports, seed data, and commands.
+- `PROJECT_PLACEHOLDER(log-format): log format, minimum fields, and redaction rules.`
+- `PROJECT_PLACEHOLDER(log-locations): local and deployed log locations.`
+- `PROJECT_PLACEHOLDER(trace-format): trace format, timeline schema, and correlation identifiers.`
+- `PROJECT_PLACEHOLDER(screenshot-policy): screenshot, video, or UI artifact capture policy.`
+- `PROJECT_PLACEHOLDER(reproduction-data): seed data, fixtures, or commands needed to replay important failures.`
 
-- `PROJECT_PLACEHOLDER(local-reproduction): list the commands and setup data needed to replay a failed or important run in the target project.`
+## Retention
 
-## Maintenance Artifacts
-
-- Location: `artifacts/maintenance/`
-- JSON report: `<timestamp>-entropy-control.json`
-- Markdown report: `<timestamp>-entropy-control.md`
-- Latest pointer: `latest-entropy-report.json`
-
-Entropy reports preserve the findings that led to cleanup tasks, quality score updates, or human escalation.
+- Keep evidence only as long as it remains useful.
+- Do not commit secrets, credentials, private user data, or sensitive screenshots.
+- Prefer summaries in completed execution plans over large raw outputs.

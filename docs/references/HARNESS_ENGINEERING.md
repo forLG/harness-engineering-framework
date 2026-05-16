@@ -7,11 +7,11 @@ Source material or source pointers belong in `references/`. This file is the dis
 ## Core Principles
 
 - Humans steer; agents execute.
-- Repository-local artifacts are the system of record.
+- Repository-local docs and plans are the system of record.
 - Agent legibility matters.
-- Important rules should be mechanically enforced.
-- Logs, metrics, traces, screenshots, and evals are part of the agent interface.
-- Entropy requires recurring cleanup.
+- Important repeated rules should be mechanically enforced.
+- Logs, traces, screenshots, and validation output are useful only when they explain a decision or regression.
+- Automation should follow proven workflows, not precede them.
 
 ## Project-Specific Notes
 

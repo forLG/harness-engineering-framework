@@ -1,35 +1,38 @@
-# Harness Engineering Framework
+# Lightweight Codex Harness
 
-This repository is a universal starting point for a Codex-based harness. Treat it as agent infrastructure, not as a prompt bundle.
+This repository is a universal starting point for a small, human-in-the-loop Codex harness. Treat it as project working structure, not as an autonomous task platform.
 
 ## Repository Map
 
-- `ARCHITECTURE.md`: runtime boundaries, extension points, and system shape.
-- `PLANS.md`: planning index and current roadmap.
-- `docs/RUNTIME.md`: agent invocation, task loop, interaction mode, and run artifact model.
-- `docs/`: durable project knowledge, quality docs, design notes, environment information, distilled references, and execution plans.
-- `docs/agent-roles/`: role prompts for implementer, validator, reviewer, and follow-up planner runs.
-- `references/`: external or raw long-lived source material used by agents; use `docs/references/` for project-local interpretation.
+- `ARCHITECTURE.md`: project shape, boundaries, extension points, state, and open decisions.
+- `PLANS.md`: roadmap and current milestones.
+- `docs/ENVIRONMENT.md`: setup, dependencies, services, ports, and environment variables.
+- `docs/RUNTIME.md`: how the target project runs: entrypoints, configuration, services, state, and stop conditions.
+- `docs/EVALUATION.md`: validation commands, manual checks, and acceptance evidence.
+- `docs/GUARDRAILS.md`: project rules and checks worth preserving.
+- `docs/OBSERVABILITY.md`: logs, screenshots, traces, and local evidence locations.
+- `docs/SECURITY.md`: secrets, credentials, external systems, and approval boundaries.
+- `docs/exec-plans/`: active and completed plans for substantial work.
+- `references/`: external or raw long-lived source material; use `docs/references/` for project-local interpretation.
 - `.skills/`: repo-local Codex skills for applying and operating the harness.
-- `runtime/`: harness runtime state, task queue, and implementation placeholder.
-- `tools/`: mechanical checks and operational utilities.
-- `evals/`: benchmark tasks, acceptance criteria, and eval results.
-- `artifacts/`: local logs, traces, screenshots, and run outputs.
+- `tools/`: small mechanical checks and operational utilities.
+- `artifacts/`: ignored local logs, screenshots, traces, and validation evidence when they explain a decision.
 
 ## Agent Rules
 
 - Prefer repository-local knowledge over unstated assumptions.
 - Keep this file short; add durable detail to focused docs and link it here.
-- Convert important rules into scripts, lint checks, CI checks, or structural tests when feasible.
+- Let humans own goals, judgment calls, credentials, production changes, and destructive actions.
+- Use Codex for scoped implementation, documentation updates, validation, and evidence capture.
+- Convert important repeated rules into scripts, lint checks, CI checks, or structural tests when feasible.
 - Record substantial work in `docs/exec-plans/active/` while it is in progress, then move it to `docs/exec-plans/completed/`.
-- Preserve logs, traces, screenshots, and eval outputs when they explain a decision or regression.
-- Treat `runtime/tasks/` as the source of truth for the outer task loop.
-- Use functional Git commit prefixes such as `docs:`, `feat:`, `fix:`, `test:`, or `chore:`; see `docs/OPERATIONS.md` for the full commit message policy.
+- Preserve logs, traces, screenshots, and validation output only when they explain a decision or regression.
+- Use functional Git commit prefixes such as `docs:`, `feat:`, `fix:`, `test:`, `build:`, `security:`, or `chore:`.
 - Escalate to a human for credentials, production changes, destructive actions, ambiguous policy decisions, and any operation outside the harness permission model.
 
 ## Required First Check
 
-Run the structural validator after changing the framework layout:
+Run the structural validator after changing the framework layout or core docs:
 
 ```bash
 python tools/validate_harness_structure.py
